@@ -28,19 +28,22 @@ export class MenuButton {
 	) {
 		this.symbol = icon(action.glyph, 28);
 		this.symbol.position.set(0, -5);
-		const title = label(action.title.toUpperCase(), 22, 0xffffff);
+		const title = label(action.title, 22, 0xffffff);
 		title.anchor.set(0.5);
 		title.y = 22;
 		this.content.addChild(this.symbol, title);
 		if (layout === 'home') {
+			const ink = action.color === 0x25e6ef || action.color === 0xffdf37 ? 0x17191f : 0xffffff;
+			title.style.fill = ink;
+			this.symbol.tint = 0xffffff;
 			title.anchor.set(0, 0.5);
-			title.position.set(76, -12);
+			title.position.set(76, action.description ? -12 : 0);
 			title.style.fontWeight = '300';
 			title.style.fontSize = 26;
 			title.style.letterSpacing = 1.5;
 			this.symbol.position.set(25, 0);
-			const detail = label(action.description ?? '', 12);
-			detail.alpha = 0.65;
+			const detail = label(action.description ?? '', 12, ink);
+			detail.alpha = 0.8;
 			detail.position.set(76, 13);
 			this.content.addChild(detail);
 		}
@@ -90,13 +93,10 @@ export class MenuButton {
 		this.lastDraw = signature;
 		if (this.layout === 'home') {
 			this.shape.clear().rect(0, 0, width, height).fill(this.action.color);
-			this.flash
-				.clear()
-				.rect(0, 0, width, height)
-				.fill({ color: 0xffffff, alpha: this.visual.hover * 0.08 + this.visual.flash * 0.35 });
-			this.content.position.set(24 + this.visual.hover * 8, height / 2);
+			this.flash.clear();
+			this.content.position.set(24, height / 2);
 			this.content.alpha = Math.min(1, height / 60);
-			this.symbol.scale.set((32 / 24) * (1 + this.visual.hover * 0.08));
+			this.symbol.scale.set(32 / 24);
 			this.root.hitArea = new Rectangle(0, 0, width, height);
 			return;
 		}

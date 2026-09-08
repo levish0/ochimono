@@ -1,4 +1,5 @@
 export interface Settings {
+	dark: boolean;
 	volume: number;
 	motion: boolean;
 	ghost: boolean;
@@ -8,6 +9,7 @@ export interface Settings {
 	arr: number;
 }
 export const defaults: Settings = {
+	dark: false,
 	volume: 25,
 	motion: true,
 	ghost: true,
@@ -20,7 +22,7 @@ export function readSettings(): Settings {
 	try {
 		const raw = JSON.parse(localStorage.getItem('ochimono.settings.v1') ?? '{}');
 		const s = { ...defaults };
-		for (const key of ['motion', 'ghost', 'grid', 'gravity'] as const)
+		for (const key of ['dark', 'motion', 'ghost', 'grid', 'gravity'] as const)
 			if (typeof raw[key] === 'boolean') s[key] = raw[key];
 		for (const [key, min, max] of [
 			['volume', 0, 100],

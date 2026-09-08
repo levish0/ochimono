@@ -21,6 +21,7 @@ const shades: Record<Piece, number> = {
 };
 
 export class AmbientBlocks {
+	dark = 0;
 	readonly view = new Graphics();
 	private grid: AmbientGrid = [];
 	private piece?: Placement;
@@ -110,14 +111,14 @@ export class AmbientBlocks {
 		for (let x = 0; x <= this.width; x += this.size) this.view.moveTo(x, 40).lineTo(x, this.height);
 		for (let y = this.bottomOffset; y <= this.height; y += this.cellHeight)
 			this.view.moveTo(0, y).lineTo(this.width, y);
-		this.view.stroke({ color: 0x797d81, alpha: 0.055, width: 1 });
+		this.view.stroke({ color: this.dark ? 0xc5cdd5 : 0x797d81, alpha: 0.055 + this.dark * 0.025, width: 1 });
 		const draw = (x: number, y: number, color: number, wipe = 0) => {
 			const left = x * this.size;
 			const removed = Math.max(0, Math.min(this.size, wipe - left));
 			if (removed < this.size)
 				this.view
 					.rect(left + removed, 40 + y * this.cellHeight, this.size - removed, this.cellHeight)
-					.fill({ color, alpha: 0.65 });
+					.fill({ color, alpha: 0.65 - this.dark * 0.49 });
 		};
 		const progress = Math.min(1, this.clearTime / 0.32);
 		const edge = this.width * (1 - (1 - progress) ** 3);

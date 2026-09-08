@@ -25,6 +25,8 @@ export class GameToolbar extends Container {
 	private right: Container[] = [];
 	private profile: ToolbarUserButton;
 	private notifications: Container;
+	private fullButton?: Container;
+	private fullscreen = false;
 	constructor(actions: ToolbarActions, context: Text, motion: Motion, hover: () => void) {
 		super();
 		this.clock = new ToolbarClock(motion);
@@ -64,6 +66,8 @@ export class GameToolbar extends Container {
 			button('navFull', actions.full),
 			button('navMusic', actions.music)
 		];
+		this.fullButton = this.right[4];
+		this.syncFullscreen();
 		this.profile = new ToolbarUserButton(m.ui_guest(), actions.profile, motion, hover);
 		this.addChild(this.profile);
 		this.addChild(this.clock);
@@ -78,6 +82,14 @@ export class GameToolbar extends Container {
 		this.notifications.x = width - 20;
 	}
 	tick(now: number) {
+		this.syncFullscreen();
 		this.clock.tick(now);
+	}
+	private syncFullscreen() {
+		const fullscreen = Boolean(document.fullscreenElement);
+		if (!this.fullButton || fullscreen === this.fullscreen) return;
+		this.fullscreen = fullscreen;
+		this.fullButton.removeChildAt(1).destroy();
+		this.fullButton.addChild(icon(fullscreen ? 'navRestore' : 'navFull', 20));
 	}
 }

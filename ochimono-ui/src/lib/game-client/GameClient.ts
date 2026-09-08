@@ -1,3 +1,7 @@
+import { SettingsSearch } from '$lib/game-ui/components/navigation/SettingsSearch';
+import { KeyCaps } from '$lib/game-ui/components/menu/KeyCaps';
+import { themeAt, menuColors } from '$lib/game-ui/theme';
+import { SessionMenu } from '$lib/game-ui/components/menu/SessionMenu';
 import { GameToolbar } from '$lib/game-ui/components/navigation/GameToolbar';
 import { ScrollController } from '$lib/game-ui/scroll/ScrollController';
 import { MenuButton, type Action } from '$lib/game-ui/components/menu/MenuButton';
@@ -27,6 +31,9 @@ export class GameClient {
 	private motion = new Motion();
 	private sound = new Sound();
 	private settings: Settings = readSettings();
+	private themeTransition = { value: this.settings.dark ? 1 : 0 };
+	private lastTheme = -1;
+	private settingsSurface?: Graphics;
 	private stage = new Container();
 	private scene = new Container();
 	private backdrop = new Graphics();
@@ -42,7 +49,10 @@ export class GameClient {
 	private blocks = new Graphics();
 	private previews = new Graphics();
 	private dropGlow = new Graphics();
+	private get theme() { return themeAt(this.themeTransition.value); }
 	private pauseView = new Container();
+	private pauseControl?: Container;
+	private sessionMenu?: SessionMenu;
 	private drawer = new Container();
 	private drawerShade = new Graphics();
 	private drawerContent = new Container();
@@ -51,10 +61,10 @@ export class GameClient {
 	private notice = label('', 15, 0x33434e);
 	private toolbarLocation = label(m.ui_home(), 13, 0xffffff);
 	private toolbarUI!: GameToolbar;
-	private linesText = label('0', 46, 0xffffff);
+	private linesText = label('0', 46, 0x30383c);
 	private timeText = label('00:00.00', 30, 0xffffff);
 	private piecesText = label('0', 26);
-	private titleText = label('ZEN', 34, 0xffffff);
+	private titleText = label('ZEN', 34, 0x30383c);
 	private modeDescription = label('');
 	private buttons: MenuButton[] = [];
 	private oldButtons: MenuButton[] = [];
@@ -225,7 +235,7 @@ export class GameClient {
 					title: m.ui_quick_match(),
 					description: m.ui_online_unavailable(),
 					glyph: 'multiplayer',
-					color: 0xe82b99,
+					color: menuColors.multiplayer,
 					disabled: true,
 					run: () => {}
 				},
@@ -233,7 +243,7 @@ export class GameClient {
 					title: m.ui_rooms(),
 					description: m.ui_online_unavailable(),
 					glyph: 'navControls',
-					color: 0x6543cb,
+					color: menuColors.solo,
 					disabled: true,
 					run: () => {}
 				},
@@ -241,7 +251,7 @@ export class GameClient {
 					title: m.ui_back(),
 					description: m.ui_main_menu(),
 					glyph: 'back',
-					color: 0x009db2,
+					color: menuColors.settings,
 					run: () => this.setMenu('top')
 				}
 			];
@@ -251,28 +261,28 @@ export class GameClient {
 					title: 'Zen',
 					description: m.ui_free_practice(),
 					glyph: 'zen',
-					color: mint,
+					color: menuColors.solo,
 					run: () => this.start('zen')
 				},
 				{
 					title: '40 Lines',
 					description: m.ui_clear_40_lines_as_fast_as_possible(),
 					glyph: 'sprint',
-					color: 0x7043e9,
+					color: menuColors.multiplayer,
 					run: () => this.start('sprint')
 				},
 				{
 					title: m.ui_controls(),
 					description: m.ui_key_bindings_and_handling(),
 					glyph: 'keys',
-					color: 0x009db2,
+					color: menuColors.records,
 					run: () => this.openPanel('help')
 				},
 				{
 					title: m.ui_back(),
 					description: m.ui_main_menu(),
 					glyph: 'back',
-					color: 0xe72f98,
+					color: menuColors.settings,
 					run: () => this.setMenu('top')
 				}
 			];
@@ -281,28 +291,28 @@ export class GameClient {
 				title: m.ui_multiplayer(),
 				description: m.ui_quick_match_and_rooms(),
 				glyph: 'multiplayer',
-				color: 0xe82b99,
+				color: menuColors.multiplayer,
 				run: () => this.setMenu('multiplayer')
 			},
 			{
 				title: m.ui_solo(),
 				description: m.ui_zen_and_40_lines(),
 				glyph: 'play',
-				color: 0x6543cb,
+				color: menuColors.solo,
 				run: () => this.setMenu('play')
 			},
 			{
 				title: m.ui_records(),
 				description: m.ui_local_session_history(),
 				glyph: 'records',
-				color: 0x83ad00,
+				color: menuColors.records,
 				run: () => this.openPanel('records')
 			},
 			{
 				title: m.ui_settings(),
 				description: m.ui_display_controls_and_sound(),
 				glyph: 'settings',
-				color: 0x009db2,
+				color: menuColors.settings,
 				run: () => this.openPanel('settings')
 			}
 		];
@@ -429,11 +439,11 @@ export class GameClient {
 			this.timeText,
 			this.piecesText
 		);
-		textAt(this.gameView, m.ui_hold(), -275, -222, 13, 0x9babb6);
-		textAt(this.gameView, m.ui_next(), 181, -222, 13, 0x9babb6);
-		textAt(this.gameView, m.ui_lines(), -275, -48, 12, 0x9babb6);
-		textAt(this.gameView, m.ui_time(), -275, 54, 12, 0x9babb6);
-		textAt(this.gameView, m.ui_pieces(), -275, 139, 12, 0x9babb6);
+		textAt(this.gameView, m.ui_hold(), -275, -222, 13, 0x657078);
+		textAt(this.gameView, m.ui_next(), 181, -222, 13, 0x657078);
+		textAt(this.gameView, m.ui_lines(), -275, -48, 12, 0x657078);
+		textAt(this.gameView, m.ui_time(), -275, 54, 12, 0x657078);
+		textAt(this.gameView, m.ui_pieces(), -275, 139, 12, 0x657078);
 		this.linesText.position.set(-275, -29);
 		this.timeText.position.set(-275, 76);
 		this.piecesText.position.set(-275, 160);
@@ -447,10 +457,10 @@ export class GameClient {
 			0,
 			321,
 			13,
-			0xb1bfcd
+			0x657078
 		);
 		help.anchor.set(0.5, 0);
-		this.toolButton(this.gameView, 'pause', 268, -278, () => this.pause(true), m.ui_pause());
+		this.pauseControl = this.toolButton(this.gameView, 'pause', 268, -278, () => this.pause(true), m.ui_pause());
 	}
 	private start(mode: Mode) {
 		this.panel = null;
@@ -477,10 +487,12 @@ export class GameClient {
 		);
 		this.motion.to(
 			this.visual,
-			{ gameAlpha: 1, gameX: 0, dim: 0.8, pause: 0, toolbar: 1 },
+			{ gameAlpha: 1, gameX: 0, dim: 0, pause: 0 },
 			600,
 			ease.outQuint
 		);
+		this.motion.to(this.visual, { toolbar: 0 }, 500, ease.outQuint);
+		this.motion.to(this.visual, { toolbarAlpha: 0 }, 500, ease.inQuint);
 		this.announce(m.ui_session_started({ mode: mode === 'zen' ? 'Zen' : '40 Lines' }));
 	}
 	private home() {
@@ -506,7 +518,7 @@ export class GameClient {
 		if (this.screen !== 'game' || (!value && this.finished)) return;
 		this.paused = value;
 		this.held.clear();
-		this.motion.to(this.visual, { pause: value ? 1 : 0 }, 300, ease.outQuint);
+		this.motion.to(this.visual, { pause: value ? 1 : 0 }, 200, ease.in);
 		if (value) {
 			this.buildPause();
 			this.announce(
@@ -520,27 +532,6 @@ export class GameClient {
 		this.pauseButtons = [];
 		this.focus = -1;
 		this.pauseView.removeChildren().forEach((c) => c.destroy({ children: true }));
-		this.pauseView.addChild(
-			new Graphics().rect(0, 0, this.width, this.height).fill({ color: 0x080c19, alpha: 0.86 })
-		);
-		const heading = textAt(
-			this.pauseView,
-			this.finished ? (this.game.state.over ? m.ui_game_over() : m.ui_complete()) : m.ui_paused(),
-			this.width * 0.5,
-			this.height * 0.31,
-			38,
-			0xffffff
-		);
-		heading.anchor.set(0.5);
-		const detail = textAt(
-			this.pauseView,
-			`${this.game.state.lines} lines   ·   ${formatTime(this.time)}`,
-			this.width * 0.5,
-			this.height * 0.38,
-			18,
-			0xa5b8c7
-		);
-		detail.anchor.set(0.5);
 		const actions: Action[] = [
 			...(this.finished
 				? []
@@ -548,30 +539,27 @@ export class GameClient {
 						{
 							title: m.ui_continue(),
 							glyph: 'play' as Glyph,
-							color: 0x159d9b,
+							color: menuColors.settings,
 							run: () => this.pause(false)
 						}
 					]),
-			{ title: m.ui_retry(), glyph: 'retry', color: 0x7043e9, run: () => this.start(this.mode) },
+			{ title: m.ui_retry(), glyph: 'retry', color: menuColors.solo, run: () => this.start(this.mode) },
 			{
 				title: m.ui_settings(),
 				glyph: 'settings',
-				color: 0x58616a,
+				color: menuColors.records,
 				run: () => this.openPanel('settings')
 			},
-			{ title: m.ui_leave(), glyph: 'back', color: 0xca348b, run: () => this.home() }
+			{ title: m.ui_leave(), glyph: 'back', color: menuColors.settings, run: () => this.home() }
 		];
-		for (const [i, a] of actions.entries()) {
-			const b = new MenuButton(a, this.motion, this.sound, this.interact);
-			b.visual.width = 155;
-			b.draw(155);
-			b.root.position.set(
-				this.width / 2 - (actions.length * 155) / 2 + i * 155,
-				this.height * 0.56
-			);
-			this.pauseView.addChild(b.root);
-			this.pauseButtons.push(b);
-		}
+		this.sessionMenu = new SessionMenu(
+			this.finished ? (this.game.state.over ? m.ui_game_over() : m.ui_complete()) : m.ui_paused(),
+			`${this.titleText.text}  ·  ${this.game.state.lines} ${m.ui_lines()}  ·  ${formatTime(this.time)}`,
+			actions, this.motion, this.sound, this.interact
+		);
+		this.pauseButtons = this.sessionMenu.buttons;
+		this.pauseView.addChild(this.sessionMenu);
+		this.sessionMenu.layout(this.width, this.height, this.visual.pause, this.themeTransition.value);
 	}
 	private saveRecord() {
 		if (this.saved || !this.game.state.placed) return;
@@ -612,6 +600,7 @@ export class GameClient {
 	}
 	private closePanel() {
 		this.endDrag();
+		this.host.focus({ preventScroll: true });
 		this.panel = null;
 		this.motion.to(this.visual, { drawer: 0 }, 600, ease.outQuint);
 		this.sound.play('back');
@@ -646,9 +635,9 @@ export class GameClient {
 		this.drawerContent.addChild(
 			new Graphics()
 				.rect(0, 0, w, this.height)
-				.fill({ color: 0xfafbf9, alpha: 1 })
+				.fill({ color: this.theme.surface, alpha: 1 })
 				.rect(0, 0, 5, this.height)
-				.fill(mint)
+				.fill(this.theme.accent)
 		);
 		this.drawerContent.eventMode = 'static';
 		this.drawerContent.removeAllListeners();
@@ -706,9 +695,9 @@ export class GameClient {
 			];
 			let rowY = 160;
 			rows.forEach(([key, desc]) => {
-				const keyText = textAt(this.drawerContent, key, 33, rowY, 15, mint);
-				keyText.style.wordWrap = true;
-				keyText.style.wordWrapWidth = 150;
+				const keyText = new KeyCaps(key.split(/[ /·]+/).filter(Boolean), this.motion, this.settings.dark, 150);
+				keyText.position.set(33, rowY);
+				this.drawerContent.addChild(keyText);
 				const description = textAt(this.drawerContent, desc, 205, rowY, 15);
 				description.style.wordWrap = true;
 				description.style.wordWrapWidth = w - 238;
@@ -746,12 +735,16 @@ export class GameClient {
 	}
 	private styleDrawer() {
 		const visit = (node: Container) => {
-			if (node instanceof Text) node.style.fill = node.style.fill === mint ? 0x24856f : 0x35434d;
-			if (node instanceof Sprite) node.tint = 0x52656e;
+			if (node instanceof Text) node.style.fill = node.style.fill === mint || node.style.fill === this.theme.accent ? this.theme.accent : this.theme.text;
+			if (node instanceof Sprite) node.tint = this.theme.muted;
 			node.children.forEach(visit);
 		};
 		visit(this.drawerContent);
 	}
+	private settingsSearch?: SettingsSearch;
+	private searchEmpty?: Text;
+	private searchEntries: { node: Container; y: number; text: string }[] = [];
+	private settingsContentHeight = 1010;
 	private settingsScroll = new ScrollController(this.motion);
 	private settingsSelection = new Graphics();
 	private settingsScrollbar = new Graphics();
@@ -762,24 +755,21 @@ export class GameClient {
 	private buildSettingsSections() {
 		this.drawerContent.removeChildren().forEach((c) => c.destroy({ children: true }));
 		const w = Math.min(700, this.width - 36);
-		const viewportHeight = this.height - 210;
-		this.settingsScroll.max = Math.max(0, 1010 - viewportHeight);
+		const viewportHeight = this.height - 124;
+		this.settingsScroll.max = Math.max(0, this.settingsContentHeight - viewportHeight);
 		this.settingsScroll.offset = Math.min(this.settingsScroll.offset, this.settingsScroll.max);
 		this.settingsScroll.target = this.settingsScroll.offset;
-		this.drawerContent.addChild(
-			new Graphics()
-				.rect(0, 0, w, this.height)
-				.fill(0xfafbf9)
-				.rect(0, 0, 170, this.height)
-				.fill(0xeeecf3)
-		);
-		textAt(this.drawerContent, m.ui_settings(), 202, 57, 30);
+		this.settingsSurface = new Graphics();
+		this.drawerContent.addChild(this.settingsSurface);
+		this.drawSettingsSurface();
+
+		this.settingsSearch ??= new SettingsSearch(this.host, m.ui_search_settings(), query => this.filterSettings(query), () => this.closePanel());
 		this.toolButton(this.drawerContent, 'close', w - 30, 37, () => this.closePanel());
 		this.settingsSelection = new Graphics()
 			.roundRect(8, 0, 154, 52, 6)
-			.fill({ color: 0x8055ed, alpha: 0.1 })
+			.fill({ color: this.theme.accent, alpha: 0.1 })
 			.roundRect(0, 10, 3, 32, 1)
-			.fill(0x8055ed);
+			.fill(this.theme.accent);
 		this.drawerContent.addChild(this.settingsSelection);
 		const sections = [
 			[m.ui_display(), 'full', 0],
@@ -797,7 +787,7 @@ export class GameClient {
 			row.hitArea = new Rectangle(0, -26, 170, 52);
 			row.eventMode = 'static';
 			row.cursor = 'pointer';
-			row.on('pointertap', () => this.scrollSettings(offset));
+			row.on('pointertap', () => { if (this.settingsSearch) this.settingsSearch.input.value = ''; this.filterSettings(''); this.scrollSettings(offset); });
 			row.on('pointerenter', () => this.sound.play('hover'));
 			this.drawerContent.addChild(row);
 		});
@@ -829,6 +819,7 @@ export class GameClient {
 		this.settingRow(m.ui_zen_gravity(), this.settings.gravity ? m.ui_on() : m.ui_off(), 248, () =>
 			this.toggle('gravity')
 		);
+		this.settingRow(m.ui_dark_mode(), this.settings.dark ? m.ui_on() : m.ui_off(), 309, () => this.toggle('dark'));
 		textAt(this.settingsRows, m.ui_controls(), 33, 377, 24);
 		this.sliderRow(m.ui_repeat_delay_das(), 'das', 430, 80, 250, 10, ' ms');
 		textAt(
@@ -848,15 +839,38 @@ export class GameClient {
 		textAt(this.settingsRows, m.ui_menu_and_gameplay_effects(), 34, 928, 14, 0x65717c);
 		this.settingsScrollbar = new Graphics();
 		this.settingsScrollbar.x = w - 7;
-		this.drawerContent.addChild(this.settingsScrollbar);
-		textAt(
-			this.drawerContent,
-			m.ui_settings_are_saved_on_this_device(),
-			202,
-			this.height - 55,
-			12,
-			0x65717c
-		);
+		this.drawerContent.addChild(this.settingsScrollbar);		const collect = (node: Container): string => node instanceof Text ? node.text : node.children.map(collect).join(' ');
+		this.searchEntries = this.settingsRows.children.map(node => ({ node, y: node.y, text: collect(node).toLowerCase() }));
+		this.searchEmpty = textAt(this.settingsRows, m.ui_no_matching_settings(), 33, 12, 16, this.theme.muted);
+		this.filterSettings(this.settingsSearch.input.value);
+		
+	}
+	private drawSettingsSurface() {
+		const w = Math.min(700, this.width - 36);
+		this.settingsSurface?.clear().rect(0, 0, w, this.height).fill(this.theme.surface).rect(0, 0, 170, this.height).fill(this.theme.sidebar);
+	}
+	private updateTheme() {
+		if (this.lastTheme === this.themeTransition.value) return;
+		this.lastTheme = this.themeTransition.value;
+		this.backdrop.clear().rect(0, 0, this.width, this.height).fill(this.theme.background);
+		if (this.panel === 'settings') { this.drawSettingsSurface(); this.styleDrawer(); }
+		for (const text of [this.titleText, this.linesText, this.timeText, this.piecesText]) text.style.fill = this.theme.text;
+		this.modeDescription.style.fill = this.theme.muted;
+		if (this.pauseControl) this.pauseControl.tint = this.theme.text;
+		this.ambient.dark = this.themeTransition.value;
+	}	private filterSettings(query: string) {
+		const words = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+		let y = 12;
+		for (const entry of this.searchEntries) {
+			entry.node.visible = words.every(word => entry.text.includes(word));
+			entry.node.y = words.length ? y : entry.y;
+			if (entry.node.visible) y += entry.node.height + 14;
+		}
+		this.settingsContentHeight = words.length ? y + 20 : 1010;
+		if (this.searchEmpty) this.searchEmpty.visible = words.length > 0 && !this.searchEntries.some(entry => entry.node.visible);
+		this.settingsScroll.max = Math.max(0, this.settingsContentHeight - (this.height - 124));
+		this.settingsScroll.offset = this.settingsScroll.target = 0;
+		this.focus = -1;
 	}
 	private settingRow(title: string, value: string, y: number, run: () => void) {
 		const w = Math.min(530, this.width - 36),
@@ -864,7 +878,7 @@ export class GameClient {
 		root.y = y;
 		const bg = new Graphics()
 			.roundRect(20, 0, w - 40, 48, 4)
-			.fill({ color: 0x152733, alpha: 0.045 });
+			.fill({ color: this.theme.text, alpha: this.settings.dark ? 0.025 : 0.025 });
 		root.addChild(bg);
 		textAt(root, title, 34, 14, 16);
 		const v = textAt(root, value, w - 37, 14, 16, mint);
@@ -879,17 +893,17 @@ export class GameClient {
 		root.on('pointerleave', () => this.motion.to(bg, { alpha: 1 }, 250));
 		const toggle = new Graphics();
 		let on = value === m.ui_on();
-		const state = { position: on ? 1 : 0 };
+		const state = { position: on ? 1 : 0, fill: on ? 1 : 0 };
 		v.visible = false;
 		const draw = () => {
-			const width = 38 + 12 * state.position;
+			const width = 42 + 14 * state.position;
 			const right = w - 39;
 			toggle
 				.clear()
-				.roundRect(right - width, 15, width, 20, 10)
-				.stroke({ color: 0x8055ed, width: 2.5, alpha: 0.5 + 0.5 * state.position })
-				.roundRect(right - width, 15, width, 20, 10)
-				.fill({ color: 0x8055ed, alpha: state.position });
+				.roundRect(right - width, 16, width, 16, 8)
+				.stroke({ color: this.theme.accent, width: 3.2, alpha: 0.65 + 0.35 * Math.max(0, Math.min(1, state.fill)) })
+				.roundRect(right - width, 16, width, 16, 8)
+				.fill({ color: this.theme.accent, alpha: Math.max(0, Math.min(1, state.fill)) });
 		};
 		draw();
 		this.toggleDraws.push(draw);
@@ -898,7 +912,8 @@ export class GameClient {
 			this.sound.play('open');
 			run();
 			on = !on;
-			this.motion.to(state, { position: on ? 1 : 0 }, 200, on ? ease.outElastic : ease.outQuint);
+			this.motion.to(state, { position: on ? 1 : 0 }, on ? 200 : 120, on ? ease.outElasticQuarter : ease.outExpo);
+			this.motion.to(state, { fill: on ? 1 : 0 }, 250, ease.outQuint);
 		};
 		root.on('pointertap', activate);
 		this.settingsRows.addChild(root);
@@ -920,23 +935,23 @@ export class GameClient {
 		root.y = y;
 		const bg = new Graphics()
 			.roundRect(20, 0, w - 40, 48, 4)
-			.fill({ color: 0x152733, alpha: 0.045 });
+			.fill({ color: this.theme.text, alpha: this.settings.dark ? 0.025 : 0.025 });
 		const track = new Graphics();
 		root.addChild(bg, track);
 		textAt(root, title, 34, 14, 16);
-		const value = textAt(root, '', w - 37, 5, 13, mint);
-		value.anchor.x = 1;
+		const value = textAt(root, '', 34, 30, 13, mint);
+		value.anchor.x = 0;
 		const left = 270,
 			right = w - 37;
 		const redraw = () => {
 			const x = left + ((right - left) * (this.settings[key] - min)) / (max - min);
 			track
 				.clear()
-				.roundRect(left, 31, right - left, 3, 1)
+				.roundRect(left, 4, right - left, 40, 5)
 				.fill(0x526171)
-				.roundRect(left, 31, Math.max(1, x - left), 3, 1)
-				.fill(mint)
-				.circle(x, 32, 6)
+				.roundRect(left, 4, Math.max(1, x - left), 40, 5)
+				.fill(this.theme.accent)
+				.roundRect(Math.max(left, Math.min(right - 10, x - 5)), 8, 10, 32, 5)
 				.fill(0xffffff);
 			value.text = `${this.settings[key]}${unit}`;
 		};
@@ -965,8 +980,9 @@ export class GameClient {
 		this.panelAdjust.push(adjust);
 		this.panelFocus.push(bg);
 	}
-	private toggle(key: 'motion' | 'ghost' | 'grid' | 'gravity') {
+	private toggle(key: 'dark' | 'motion' | 'ghost' | 'grid' | 'gravity') {
 		this.settings[key] = !this.settings[key];
+		if (key === 'dark') this.motion.to(this.themeTransition, { value: this.settings.dark ? 1 : 0 }, 450, ease.outQuint);
 		this.saveSettings();
 	}
 	private saveSettings() {
@@ -1017,14 +1033,14 @@ export class GameClient {
 			else if (key === 'Tab' || key === 'ArrowDown' || key === 'ArrowUp') {
 				const dir = e.shiftKey || key === 'ArrowUp' ? -1 : 1;
 				const n = this.panelActions.length;
-				if (!n) return;
-				this.focus = (this.focus + dir + n) % n;
+				if (!n || !this.panelFocus.some(item => item.parent.visible)) return;
+				do { this.focus = (this.focus + dir + n) % n; } while (!this.panelFocus[this.focus].parent.visible && this.panelFocus.some(item => item.parent.visible));
 				this.panelFocus.forEach((b, i) => (b.alpha = i === this.focus ? 3 : 1));
 				if (this.panel === 'settings') {
 					const y = this.panelFocus[this.focus].parent.y;
 					if (
 						y < this.settingsScroll.offset ||
-						y + 48 > this.settingsScroll.offset + this.height - 210
+						y + 48 > this.settingsScroll.offset + this.height - 124
 					)
 						this.scrollSettings(y - 24);
 				}
@@ -1074,10 +1090,10 @@ export class GameClient {
 			return;
 		}
 		if (this.paused || this.finished) {
-			if (key === 'Tab' || key === 'ArrowLeft' || key === 'ArrowRight') {
+			if (key === 'Tab' || key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight') {
 				const n = this.pauseButtons.length,
-					dir = e.shiftKey || key === 'ArrowLeft' ? -1 : 1;
-				this.focus = (this.focus + dir + n) % n;
+					dir = e.shiftKey || key === 'ArrowUp' || key === 'ArrowLeft' ? -1 : 1;
+				do { this.focus = (this.focus + dir + n) % n; } while (!this.panelFocus[this.focus].parent.visible && this.panelFocus.some(item => item.parent.visible));
 				this.pauseButtons.forEach((b, i) => b.hover(i === this.focus));
 			}
 			if (key === 'Enter' || key === 'Space') {
@@ -1155,9 +1171,9 @@ export class GameClient {
 		this.board
 			.clear()
 			.rect(bx - 2, by - 2, 264, 524)
-			.fill({ color: 0x121d2a, alpha: 0.92 })
+			.fill({ color: 0x202428, alpha: 0.92 })
 			.rect(bx, by, 260, 520)
-			.stroke({ color: 0xb8d5e3, alpha: 0.3, width: 1 });
+			.stroke({ color: 0x899198, alpha: 0.3, width: 1 });
 		if (this.settings.grid) {
 			for (let x = 1; x < 10; x++)
 				this.board
@@ -1228,8 +1244,12 @@ export class GameClient {
 		this.bottom.position.set(this.width / 2, this.height - 50);
 		this.notice.position.set(this.width / 2, this.height - 28);
 		this.shade.clear().rect(0, 0, this.width, this.height).fill(0x040915);
-		this.backdrop.clear().rect(0, 0, this.width, this.height).fill(0xf7f7f5);
+		this.backdrop.clear().rect(0, 0, this.width, this.height).fill(this.theme.background);
+		this.ambient.dark = this.themeTransition.value;
 		this.ambient.resize(this.width, this.height);
+		for (const text of [this.titleText, this.linesText, this.timeText, this.piecesText]) text.style.fill = this.theme.text;
+		this.modeDescription.style.fill = this.theme.muted;
+		if (this.pauseControl) this.pauseControl.tint = this.theme.text;
 		if (this.panel) this.buildDrawer();
 		if (this.paused) this.buildPause();
 		this.dirty = true;
@@ -1240,6 +1260,7 @@ export class GameClient {
 			dt = Math.min(elapsed, 0.05);
 		this.lastTick = now;
 		this.motion.update(now);
+		this.updateTheme();
 		if (this.panel) for (const draw of this.toggleDraws) draw();
 		if (this.panel === 'settings') {
 			const offset = this.settingsScroll.offset;
@@ -1247,13 +1268,13 @@ export class GameClient {
 			const section =
 				offset >= this.settingsScroll.max - 1 && offset > 0 ? 2 : offset >= 365 ? 1 : 0;
 			this.settingsSelection.y = 117 + section * 64;
-			const height = this.height - 210;
-			const thumb = height * Math.min(1, height / 1010);
+			const height = this.height - 124;
+			const thumb = height * Math.min(1, height / this.settingsContentHeight);
 			this.settingsScrollbar.clear();
 			if (this.settingsScroll.max > 0)
 				this.settingsScrollbar
 					.roundRect(0, 116 + ((height - thumb) * offset) / this.settingsScroll.max, 3, thumb, 1.5)
-					.fill({ color: 0x8055ed, alpha: 0.45 });
+					.fill({ color: this.theme.accent, alpha: 0.45 });
 		}
 		this.sound.volume = this.settings.volume;
 		const v = this.visual,
@@ -1269,14 +1290,14 @@ export class GameClient {
 		this.menu.visible = v.menuAlpha > 0.001;
 		this.menu.eventMode = this.screen === 'menu' && !this.panel ? 'auto' : 'none';
 		const menuWidth = Math.min(720, w - 80);
-		const rowHeight = Math.min(106, (h - 160) / 4.4);
+		const rowHeight = Math.min(106, (h - 160) / 4.5);
 		this.band.clear();
 		this.ribbon.alpha = 1;
 		this.ribbon.scale.set(1);
 		this.ribbon.position.set(w - menuWidth - 40, 40 + (h - 40) / 2);
 		for (const group of [this.oldButtons, this.buttons]) {
 			const heights = group.map((b) =>
-				Math.max(0, rowHeight * b.visual.width * (1 + b.visual.hover * 0.28))
+				Math.max(0, rowHeight * b.visual.width * (1 + b.visual.hover * 0.5))
 			);
 			let y = -heights.reduce((sum, height) => sum + height, 0) / 2;
 			group.forEach((b, i) => {
@@ -1292,9 +1313,11 @@ export class GameClient {
 		for (const child of this.toolbar.children.slice(1)) child.tint = 0xffffff;
 		this.toolbar.y = -40 * (1 - v.toolbar);
 		this.toolbar.visible = v.toolbar > 0.001;
-		this.toolbar.eventMode = this.panel ? 'none' : 'auto';
+		this.toolbar.eventMode = this.panel || this.screen === 'game' ? 'none' : 'auto';
 		this.bottom.alpha = v.bottom;
-		this.gameView.position.set(w / 2 + v.gameX, h / 2 - 3 + v.drop * 3 * motion);
+		const gameScale = Math.min((w - 48) / 650, (h - 32) / 650);
+		this.gameView.scale.set(gameScale);
+		this.gameView.position.set(w / 2 + v.gameX, h / 2 - 16 * gameScale + v.drop * 3 * motion);
 		this.gameView.alpha = v.gameAlpha;
 		this.gameView.visible = v.gameAlpha > 0.001;
 		this.gameView.eventMode =
@@ -1302,23 +1325,16 @@ export class GameClient {
 		this.pauseView.alpha = v.pause;
 		this.pauseView.visible = v.pause > 0.001;
 		this.pauseView.eventMode = this.paused && !this.panel ? 'auto' : 'none';
-		if (this.paused) {
-			const total = this.pauseButtons.reduce((sum, b) => sum + 155 + b.visual.hover * 30, 0);
-			let x = w / 2 - total / 2;
-			for (const b of this.pauseButtons) {
-				const width = 155 + b.visual.hover * 30;
-				b.root.x = x;
-				b.draw(width);
-				x += width;
-			}
-		}
+		this.sessionMenu?.layout(w, h, v.pause, this.themeTransition.value);
 		this.drawer.visible = v.drawer > 0.001;
 		this.drawer.alpha = 1;
 		this.drawerShade.alpha = v.drawer;
 		this.drawerContent.x = -740 * (1 - v.drawer);
+		const bounds = this.host.getBoundingClientRect();
+		this.settingsSearch?.layout(bounds.left + (this.drawerContent.x + 190) * this.stage.scale.x, bounds.top + 40 * this.stage.scale.y, (Math.min(700, w - 36) - 235) * this.stage.scale.x, this.stage.scale.y, this.theme.text, this.panel === 'settings');
 		this.drawer.eventMode = this.panel ? 'auto' : 'none';
 		this.dropGlow.clear();
-		if (v.drop > 0.01) this.dropGlow.rect(-130, 294, 260, 4).fill({ color: mint, alpha: v.drop });
+		if (v.drop > 0.01) this.dropGlow.rect(-130, 294, 260, 4).fill({ color: menuColors.solo, alpha: v.drop });
 		if (this.screen === 'game' && !this.paused && !this.panel && !this.finished) {
 			this.time += elapsed;
 			for (const [key, held] of this.held) {
@@ -1345,6 +1361,7 @@ export class GameClient {
 		}
 	};
 	destroy() {
+		this.settingsSearch?.destroy();
 		this.disposed = true;
 		this.observer?.disconnect();
 		this.motion.clear();

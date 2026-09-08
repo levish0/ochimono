@@ -26,9 +26,11 @@ import navCode from '@iconify-icons/heroicons/code-bracket';
 import navUser from '@iconify-icons/heroicons/user-circle';
 import navSound from '@iconify-icons/heroicons/speaker-wave';
 import navFull from '@iconify-icons/heroicons/arrows-pointing-out';
+import navRestore from '@iconify-icons/heroicons/arrows-pointing-in';
 import navNotifications from '@iconify-icons/heroicons/bell';
 
 const glyphs = {
+	navRestore,
 	navNotifications,
 	navHome,
 	navSettings,
@@ -83,7 +85,7 @@ export function icon(kind: Glyph, size = 30) {
 }
 export function label(text: string, size = 18, color = 0xffffff) {
 	return new Text({
-		text: text.toUpperCase(),
+		text,
 		resolution: Math.min(3, Math.max(2, devicePixelRatio)),
 		roundPixels: true,
 		style: {

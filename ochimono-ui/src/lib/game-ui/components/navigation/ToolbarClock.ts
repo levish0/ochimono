@@ -1,13 +1,14 @@
 import { Container, Graphics } from 'pixi.js';
 import { Motion, ease } from '$lib/game-ui/motion/motion';
 import { label } from '$lib/game-ui/rendering/visuals';
+import { primary } from '$lib/game-ui/theme';
 
 /** Compact square clock with an inset seconds indicator. */
 export class ToolbarClock extends Container {
 	private face = new Container();
 	private hands = [new Graphics(), new Graphics(), new Graphics()];
 	private time = label('', 14);
-	private running = label('', 10, 0x9bcfd7);
+	private running = label('', 10, primary);
 	private started = performance.now();
 	private second = -1;
 	constructor(private motion: Motion) {
@@ -17,7 +18,7 @@ export class ToolbarClock extends Container {
 			new Graphics().roundRect(-11, -11, 22, 22, 4).stroke({ color: 0xffffff, width: 1.4 })
 		);
 		this.hands.forEach((hand, i) => {
-			if (i === 2) hand.circle(8.5, 0, 1.1).fill(0x87e0ee);
+			if (i === 2) hand.circle(8.5, 0, 1.1).fill(primary);
 			else
 				hand
 					.moveTo(0, 0)

@@ -1,8 +1,10 @@
 export const ease = {
 	linear: (t: number) => t,
 	in: (t: number) => t * t,
+	inQuint: (t: number) => t ** 5,
 	outQuint: (t: number) => 1 - (1 - t) ** 5,
 	outExpo: (t: number) => (t === 1 ? 1 : 1 - 2 ** (-10 * t)),
+	outElasticQuarter: (t: number) => t === 0 || t === 1 ? t : 2 ** (-10 * t) * Math.sin((t - 0.3) * Math.PI * 2 / 1.2) + 1,
 	inSine: (t: number) => 1 - Math.cos((t * Math.PI) / 2),
 	outElastic: (t: number) =>
 		t === 0 || t === 1 ? t : 2 ** (-10 * t) * Math.sin(((t * 10 - 0.75) * Math.PI * 2) / 3) + 1

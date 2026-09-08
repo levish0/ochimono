@@ -50,9 +50,9 @@
 		out:fade={{ duration: 250 }}
 	>
 		<LoadingSpinner />
-		<span class="text-sm font-normal text-neutral-500 uppercase">{error || m.ui_loading()}</span>
+		{#if error}<span class="text-sm font-normal text-neutral-500">{error}</span>{/if}
 		{#if error}<button
-				class="cursor-pointer border border-neutral-300 px-5 py-2.5"
+				class="cursor-pointer bg-[#6543cb] px-8 py-3 text-sm tracking-widest text-white transition-[transform,background-color] duration-300 ease-out hover:scale-105 hover:bg-[#7957dc] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6543cb] active:scale-95 motion-reduce:transform-none"
 				onclick={() => location.reload()}>{m.ui_reload()}</button
 			>{/if}
 	</div>
