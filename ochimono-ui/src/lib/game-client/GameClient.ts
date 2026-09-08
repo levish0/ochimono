@@ -1,3 +1,4 @@
+import { SettingsSidebarItem } from '$lib/game-ui/components/settings/SettingsSidebarItem';
 import { SettingsPanelFrame } from '$lib/game-ui/components/settings/SettingsPanelFrame';
 import { consumeRepeats } from '$lib/game/input-repeat';
 import { NumberEditor } from '$lib/game-ui/components/menu/NumberEditor';
@@ -15,7 +16,7 @@ import { readSettings, type Settings } from './settings';
 import { ease, Motion } from '$lib/game-ui/motion/motion';
 import { icon, label, preloadIcons, textAt, type Glyph } from '$lib/game-ui/rendering/visuals';
 import { Sound } from '$lib/game-ui/audio/sound';
-import { AmbientBlocks } from '$lib/game-ui/components/background/AmbientBlocks';
+import { ImageBackground } from '$lib/game-ui/components/background/ImageBackground';
 
 type MenuState = 'initial' | 'top' | 'play' | 'multiplayer';
 type Mode = 'zen' | 'sprint';
@@ -42,7 +43,8 @@ export class GameClient {
 	private stage = new Container();
 	private scene = new Container();
 	private backdrop = new Graphics();
-	private ambient = new AmbientBlocks();
+	private imageBackground = new ImageBackground();
+	private screenShift = 0;
 	private shade = new Graphics();
 	private menu = new Container();
 	private band = new Graphics();
@@ -63,7 +65,7 @@ export class GameClient {
 	private drawerContent = new Container();
 	private settingsRows = new Container();
 
-	private notice = label('', 15, 0x33434e);
+	private notice = label('', 15, this.theme.text);
 	private toolbarLocation = label(m.ui_home(), 13, 0xffffff);
 	private toolbarUI!: GameToolbar;
 	private linesText = label('0', 46, 0x30383c);
@@ -148,7 +150,7 @@ export class GameClient {
 			document.fonts.load('300 22px "Sora"'),
 			document.fonts.load('400 18px "Sora"')
 		]);
-		await preloadIcons();
+		await Promise.all([preloadIcons(), this.imageBackground.load()]);
 		if (this.disposed) return;
 		await this.app.init({
 			background: 0xf7f7f5,
@@ -167,7 +169,7 @@ export class GameClient {
 		this.app.canvas.setAttribute('aria-hidden', 'true');
 		this.app.stage.addChild(this.stage);
 		this.scene.addChild(
-			this.ambient.view,
+			this.imageBackground,
 			this.shade,
 			this.gameView,
 			this.menu,
@@ -544,22 +546,16 @@ export class GameClient {
 						{
 							title: m.ui_continue(),
 							glyph: 'play' as Glyph,
-							color: menuColors.settings,
+							color: menuColors.solo,
 							run: () => this.pause(false)
 						}
 					]),
-			{ title: m.ui_retry(), glyph: 'retry', color: menuColors.solo, run: () => this.start(this.mode) },
-			{
-				title: m.ui_settings(),
-				glyph: 'settings',
-				color: menuColors.records,
-				run: () => this.openPanel('settings')
-			},
-			{ title: m.ui_leave(), glyph: 'back', color: menuColors.settings, run: () => this.home() }
+			{ title: m.ui_retry(), glyph: 'retry', color: menuColors.records, run: () => this.start(this.mode) },
+			{ title: m.ui_leave(), glyph: 'back', color: menuColors.multiplayer, run: () => this.home() }
 		];
 		this.sessionMenu = new SessionMenu(
 			this.finished ? (this.game.state.over ? m.ui_game_over() : m.ui_complete()) : m.ui_paused(),
-			`${this.titleText.text}  ·  ${this.game.state.lines} ${m.ui_lines()}  ·  ${formatTime(this.time)}`,
+			`${this.titleText.text}\n${this.game.state.lines} ${m.ui_lines()}\n${formatTime(this.time)}`,
 			actions, this.motion, this.sound, this.interact
 		);
 		this.pauseButtons = this.sessionMenu.buttons;
@@ -752,7 +748,7 @@ export class GameClient {
 	private settingsContentHeight = 1160;
 	private selectedSettingsSection: number | null = null;
 	private settingsScroll = new ScrollController(this.motion);
-	private settingsSelection = new Graphics();
+	private settingsSidebar: SettingsSidebarItem[] = [];
 	private settingsScrollbar = new Graphics();
 	private scrollSettings(offset: number, section: number | null = null) {
 		this.selectedSettingsSection = section;
@@ -772,30 +768,18 @@ export class GameClient {
 
 		this.settingsSearch ??= new SettingsSearch(this.host, m.ui_search_settings(), query => this.filterSettings(query), () => this.closePanel());
 
-		this.settingsSelection = new Graphics()
-			.roundRect(8, 0, 154, 42, 6)
-			.fill({ color: this.theme.accent, alpha: 0.1 })
-			.roundRect(0, 10, 3, 32, 1)
-			.fill(this.theme.accent);
-		this.drawerContent.addChild(this.settingsSelection);
+		this.settingsSidebar = [];
 		const sections = [
 			[m.ui_display(), 'full', 0],
 			[m.ui_controls(), 'keys', 365],
 			[m.ui_sound(), 'sound', 978]
 		] as const;
 		sections.forEach(([title, glyph, offset], i) => {
-			const y = 66 + i * 46;
-			const row = new Container();
-			row.y = y;
-			const symbol = icon(glyph, 22);
-			symbol.position.set(34, 0);
-			row.addChild(symbol);
-			textAt(row, title, 65, -10, 16);
-			row.hitArea = new Rectangle(0, -26, 170, 52);
-			row.eventMode = 'static';
-			row.cursor = 'pointer';
-			row.on('pointertap', () => { if (this.settingsSearch?.input.value) { this.settingsSearch.input.value = ''; this.filterSettings(''); } this.scrollSettings(offset === 0 ? 0 : offset + SettingsPanelFrame.header, i); });
-			row.on('pointerenter', () => this.sound.play('hover'));
+			const row = new SettingsSidebarItem(title, glyph, this.motion,
+				() => { if (this.settingsSearch?.input.value) { this.settingsSearch.input.value = ''; this.filterSettings(''); } this.scrollSettings(offset === 0 ? 0 : offset + SettingsPanelFrame.header, i); },
+				() => this.sound.play('hover'));
+			row.y = 40 + i * 46;
+			this.settingsSidebar.push(row);
 			this.drawerContent.addChild(row);
 		});
 		const viewport = new Container();
@@ -883,7 +867,7 @@ export class GameClient {
 		for (const text of [this.titleText, this.linesText, this.timeText, this.piecesText]) text.style.fill = this.theme.text;
 		this.modeDescription.style.fill = this.theme.muted;
 		if (this.pauseControl) this.pauseControl.tint = this.theme.text;
-		this.ambient.dark = this.themeTransition.value;
+
 	}	private filterSettings(query: string) {
 		const words = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
 		let y = 12;
@@ -1037,6 +1021,7 @@ export class GameClient {
 	}
 	private toast(message: string) {
 		this.notice.text = message;
+		this.notice.style.fill = this.theme.text;
 		this.notice.alpha = 1;
 		this.motion.to(this.notice, { alpha: 0 }, 400, ease.outQuint, 1600);
 	}
@@ -1133,7 +1118,7 @@ export class GameClient {
 			if (key === 'Tab' || key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight') {
 				const n = this.pauseButtons.length,
 					dir = e.shiftKey || key === 'ArrowUp' || key === 'ArrowLeft' ? -1 : 1;
-				do { this.focus = (this.focus + dir + n) % n; } while (!this.panelFocus[this.focus].parent.visible && this.panelFocus.some(item => item.parent.visible));
+				this.focus = (this.focus + dir + n) % n;
 				this.pauseButtons.forEach((b, i) => b.hover(i === this.focus));
 			}
 			if (key === 'Enter' || key === 'Space') {
@@ -1285,8 +1270,8 @@ export class GameClient {
 		this.notice.position.set(this.width / 2, this.height - 28);
 		this.shade.clear().rect(0, 0, this.width, this.height).fill(0x040915);
 		this.backdrop.clear().rect(0, 0, this.width, this.height).fill(this.theme.background);
-		this.ambient.dark = this.themeTransition.value;
-		this.ambient.resize(this.width, this.height);
+
+
 		for (const text of [this.titleText, this.linesText, this.timeText, this.piecesText]) text.style.fill = this.theme.text;
 		this.modeDescription.style.fill = this.theme.muted;
 		if (this.pauseControl) this.pauseControl.tint = this.theme.text;
@@ -1311,7 +1296,7 @@ export class GameClient {
 			this.drawSettingsSurface();
 			const section =
 				this.selectedSettingsSection ?? (offset >= this.settingsScroll.max - 1 && offset > 0 ? 2 : offset >= 465 ? 1 : 0);
-			this.settingsSelection.y = 45 + section * 46;
+			this.settingsSidebar.forEach((item, index) => item.update(index === section, this.themeTransition.value));
 			const height = this.height - contentY;
 			const thumb = height * Math.min(1, height / this.settingsContentHeight);
 			this.settingsScrollbar.clear();
@@ -1329,8 +1314,12 @@ export class GameClient {
 		this.parallax.x += (this.pointer.x * 14 * motion - this.parallax.x) * factor;
 		this.parallax.y += (this.pointer.y * 10 * motion - this.parallax.y) * factor;
 		this.shade.alpha = v.dim;
+		this.notice.style.fill = this.theme.text;
 		this.menu.alpha = v.menuAlpha;
-		this.menu.x = v.menuX;
+		const shiftTarget = this.panel === 'settings' ? 570 * 0.05 : 0;
+		this.screenShift += (shiftTarget - this.screenShift) * (1 - 2 ** (-elapsed / 0.1));
+		if (shiftTarget === 0 && Math.abs(this.screenShift) < 0.2) this.screenShift = 0;
+		this.menu.x = v.menuX + this.screenShift;
 		this.menu.visible = v.menuAlpha > 0.001;
 		this.menu.eventMode = this.screen === 'menu' && !this.panel ? 'auto' : 'none';
 		const menuWidth = Math.min(720, w - 80);
@@ -1350,9 +1339,7 @@ export class GameClient {
 				y += heights[i];
 			});
 		}
-		this.ambient.view.visible = v.menuAlpha > 0.001;
-		this.ambient.view.alpha = v.menuAlpha;
-		if (this.ambient.view.visible) this.ambient.tick(dt, this.motion.reduced);
+		this.imageBackground.update(w, h, this.pointer, dt, this.screenShift, this.motion.reduced, this.screen === 'menu');
 		this.toolbar.alpha = v.toolbarAlpha;
 		for (const child of this.toolbar.children.slice(1)) child.tint = 0xffffff;
 		this.toolbar.y = -40 * (1 - v.toolbar);
@@ -1361,7 +1348,7 @@ export class GameClient {
 		this.bottom.alpha = v.bottom;
 		const gameScale = Math.min((w - 48) / 650, (h - 32) / 650);
 		this.gameView.scale.set(gameScale);
-		this.gameView.position.set(w / 2 + v.gameX, h / 2 - 16 * gameScale + v.drop * 3 * motion);
+		this.gameView.position.set(w / 2 + v.gameX + this.screenShift, h / 2 - 16 * gameScale + v.drop * 3 * motion);
 		this.gameView.alpha = v.gameAlpha;
 		this.gameView.visible = v.gameAlpha > 0.001;
 		this.gameView.eventMode =

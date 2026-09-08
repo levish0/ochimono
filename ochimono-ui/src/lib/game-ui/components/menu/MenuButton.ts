@@ -24,7 +24,7 @@ export class MenuButton {
 		private motion: Motion,
 		private sound: Sound,
 		private interact: () => void,
-		private layout: 'tile' | 'row' | 'home' = 'tile'
+		private layout: 'tile' | 'row' | 'home' | 'dialog' = 'tile'
 	) {
 		this.symbol = icon(action.glyph, 28);
 		this.symbol.position.set(0, -5);
@@ -32,6 +32,13 @@ export class MenuButton {
 		title.anchor.set(0.5);
 		title.y = 22;
 		this.content.addChild(this.symbol, title);
+		if (layout === 'dialog') {
+			this.symbol.visible = false;
+			title.position.set(0, 0);
+			title.style.fontSize = 26;
+			title.style.fontWeight = '300';
+			title.style.fill = action.color === 0x25e6ef || action.color === 0xffdf37 ? 0x17191f : 0xffffff;
+		}
 		if (layout === 'home') {
 			const ink = action.color === 0x25e6ef || action.color === 0xffdf37 ? 0x17191f : 0xffffff;
 			title.style.fill = ink;
@@ -91,6 +98,13 @@ export class MenuButton {
 		const signature = `${height.toFixed(3)}:${width.toFixed(3)}:${this.visual.hover.toFixed(3)}:${this.visual.flash.toFixed(3)}`;
 		if (signature === this.lastDraw) return;
 		this.lastDraw = signature;
+		if (this.layout === 'dialog') {
+			this.shape.clear().rect(0, 0, width, height).fill(this.action.color);
+			this.flash.clear();
+			this.content.position.set(width / 2, height / 2);
+			this.root.hitArea = new Rectangle(0, 0, width, height);
+			return;
+		}
 		if (this.layout === 'home') {
 			this.shape.clear().rect(0, 0, width, height).fill(this.action.color);
 			this.flash.clear();

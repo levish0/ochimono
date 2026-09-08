@@ -10,7 +10,9 @@ AGPL license or license the entire application under MIT.
 Parts of the game UI behavior are adapted from the MIT-licensed code in
 [ppy/osu](https://github.com/ppy/osu), using the local `2026.804.2-lazer` reference.
 This includes toolbar transitions and layout, main-menu expansion, settings
-switch and slider behavior, loading transitions, and gameplay-menu timing.
+switch and slider behavior, loading transitions, gameplay-menu timing, background
+parallax, and side-overlay displacement. Continuous damping follows
+the MIT-licensed [ppy/osu-framework](https://github.com/ppy/osu-framework).
 The PixiJS implementation contains local changes and is not an official port.
 
 The original copyright and full permission notice are included in
