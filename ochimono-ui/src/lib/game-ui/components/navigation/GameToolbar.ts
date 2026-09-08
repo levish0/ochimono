@@ -27,6 +27,7 @@ export class GameToolbar extends Container {
 	private notifications: Container;
 	private fullButton?: Container;
 	private fullscreen = false;
+	private muted = false;
 	constructor(actions: ToolbarActions, context: Text, motion: Motion, hover: () => void) {
 		super();
 		this.clock = new ToolbarClock(motion);
@@ -81,7 +82,13 @@ export class GameToolbar extends Container {
 		this.clock.position.set(width - 174, 0);
 		this.notifications.x = width - 20;
 	}
-	tick(now: number) {
+	 tick(now: number, volume: number) {
+		const muted = volume === 0;
+		if (muted !== this.muted) {
+			this.muted = muted;
+			this.right[3].removeChildAt(1).destroy();
+			this.right[3].addChild(icon(muted ? 'navMute' : 'navSound', 20));
+		}
 		this.syncFullscreen();
 		this.clock.tick(now);
 	}

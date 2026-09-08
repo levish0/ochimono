@@ -1,3 +1,6 @@
+import { SettingsPanelFrame } from '$lib/game-ui/components/settings/SettingsPanelFrame';
+import { consumeRepeats } from '$lib/game/input-repeat';
+import { NumberEditor } from '$lib/game-ui/components/menu/NumberEditor';
 import { SettingsSearch } from '$lib/game-ui/components/navigation/SettingsSearch';
 import { KeyCaps } from '$lib/game-ui/components/menu/KeyCaps';
 import { themeAt, menuColors } from '$lib/game-ui/theme';
@@ -33,7 +36,9 @@ export class GameClient {
 	private settings: Settings = readSettings();
 	private themeTransition = { value: this.settings.dark ? 1 : 0 };
 	private lastTheme = -1;
-	private settingsSurface?: Graphics;
+	private settingsFrame?: SettingsPanelFrame;
+	private settingsViewport?: Container;
+	private settingsMask?: Graphics;
 	private stage = new Container();
 	private scene = new Container();
 	private backdrop = new Graphics();
@@ -744,29 +749,31 @@ export class GameClient {
 	private settingsSearch?: SettingsSearch;
 	private searchEmpty?: Text;
 	private searchEntries: { node: Container; y: number; text: string }[] = [];
-	private settingsContentHeight = 1010;
+	private settingsContentHeight = 1160;
+	private selectedSettingsSection: number | null = null;
 	private settingsScroll = new ScrollController(this.motion);
 	private settingsSelection = new Graphics();
 	private settingsScrollbar = new Graphics();
-	private scrollSettings(offset: number) {
+	private scrollSettings(offset: number, section: number | null = null) {
+		this.selectedSettingsSection = section;
 		this.endDrag();
 		this.settingsScroll.scrollTo(offset);
 	}
 	private buildSettingsSections() {
 		this.drawerContent.removeChildren().forEach((c) => c.destroy({ children: true }));
 		const w = Math.min(700, this.width - 36);
-		const viewportHeight = this.height - 124;
-		this.settingsScroll.max = Math.max(0, this.settingsContentHeight - viewportHeight);
+		const viewportHeight = SettingsPanelFrame.viewportHeight(this.height);
+		this.settingsScroll.max = Math.max(0, this.settingsContentHeight + SettingsPanelFrame.header - viewportHeight);
 		this.settingsScroll.offset = Math.min(this.settingsScroll.offset, this.settingsScroll.max);
 		this.settingsScroll.target = this.settingsScroll.offset;
-		this.settingsSurface = new Graphics();
-		this.drawerContent.addChild(this.settingsSurface);
+		this.settingsFrame = new SettingsPanelFrame(m.ui_settings());
+		this.drawerContent.addChild(this.settingsFrame);
 		this.drawSettingsSurface();
 
 		this.settingsSearch ??= new SettingsSearch(this.host, m.ui_search_settings(), query => this.filterSettings(query), () => this.closePanel());
-		this.toolButton(this.drawerContent, 'close', w - 30, 37, () => this.closePanel());
+
 		this.settingsSelection = new Graphics()
-			.roundRect(8, 0, 154, 52, 6)
+			.roundRect(8, 0, 154, 42, 6)
 			.fill({ color: this.theme.accent, alpha: 0.1 })
 			.roundRect(0, 10, 3, 32, 1)
 			.fill(this.theme.accent);
@@ -774,10 +781,10 @@ export class GameClient {
 		const sections = [
 			[m.ui_display(), 'full', 0],
 			[m.ui_controls(), 'keys', 365],
-			[m.ui_sound(), 'sound', 805]
+			[m.ui_sound(), 'sound', 978]
 		] as const;
 		sections.forEach(([title, glyph, offset], i) => {
-			const y = 143 + i * 64;
+			const y = 66 + i * 46;
 			const row = new Container();
 			row.y = y;
 			const symbol = icon(glyph, 22);
@@ -787,15 +794,17 @@ export class GameClient {
 			row.hitArea = new Rectangle(0, -26, 170, 52);
 			row.eventMode = 'static';
 			row.cursor = 'pointer';
-			row.on('pointertap', () => { if (this.settingsSearch) this.settingsSearch.input.value = ''; this.filterSettings(''); this.scrollSettings(offset); });
+			row.on('pointertap', () => { if (this.settingsSearch?.input.value) { this.settingsSearch.input.value = ''; this.filterSettings(''); } this.scrollSettings(offset === 0 ? 0 : offset + SettingsPanelFrame.header, i); });
 			row.on('pointerenter', () => this.sound.play('hover'));
 			this.drawerContent.addChild(row);
 		});
 		const viewport = new Container();
-		viewport.position.set(170, 116);
+		this.settingsViewport = viewport;
+		viewport.position.set(170, SettingsPanelFrame.contentY(this.settingsScroll.offset));
 		viewport.eventMode = 'static';
 		viewport.hitArea = new Rectangle(0, 0, w - 170, viewportHeight);
-		const mask = new Graphics().rect(170, 116, w - 170, viewportHeight).fill(0xffffff);
+		const mask = new Graphics();
+		this.settingsMask = mask;
 		this.drawerContent.addChild(viewport, mask);
 		viewport.mask = mask;
 		viewport.addChild(this.settingsRows);
@@ -821,7 +830,7 @@ export class GameClient {
 		);
 		this.settingRow(m.ui_dark_mode(), this.settings.dark ? m.ui_on() : m.ui_off(), 309, () => this.toggle('dark'));
 		textAt(this.settingsRows, m.ui_controls(), 33, 377, 24);
-		this.sliderRow(m.ui_repeat_delay_das(), 'das', 430, 80, 250, 10, ' ms');
+		this.sliderRow(m.ui_repeat_delay_das(), 'das', 430, 0, 500, 1, ' ms');
 		textAt(
 			this.settingsRows,
 			m.ui_delay_before_a_held_key_starts_repeating(),
@@ -830,24 +839,41 @@ export class GameClient {
 			12,
 			0x65717c
 		);
-		this.sliderRow(m.ui_repeat_interval_arr(), 'arr', 545, 10, 100, 10, ' ms');
+		this.sliderRow(m.ui_repeat_interval_arr(), 'arr', 545, 0, 100, 1, ' ms');
 		textAt(this.settingsRows, m.ui_lower_values_repeat_movement_faster(), 34, 601, 12, 0x65717c);
-		textAt(this.settingsRows, m.ui_left_right_move_z_x_rotate_space_drop(), 34, 671, 14);
-		textAt(this.settingsRows, m.ui_c_hold_ctrl_z_undo_esc_pause(), 34, 705, 14);
-		textAt(this.settingsRows, m.ui_sound(), 33, 817, 24);
-		this.sliderRow(m.ui_effects_volume(), 'volume', 870, 0, 100, 5, '%');
-		textAt(this.settingsRows, m.ui_menu_and_gameplay_effects(), 34, 928, 14, 0x65717c);
+		const bindings: [string[], string][] = [
+			[['←', '→'], m.ui_move_left_right()],
+			[['↓'], m.ui_soft_drop()],
+			[['X', '↑', 'Z'], m.ui_rotate_clockwise_counterclockwise()],
+			[['Space'], m.ui_hard_drop()],
+			[['C', 'Shift'], m.ui_hold()],
+			[['Ctrl', 'Z'], m.ui_undo_zen()],
+			[['Esc'], m.ui_pause_back()]
+		];
+		bindings.forEach(([keys, description], index) => {
+			const row = new Container();
+			row.position.set(34, 650 + index * 44);
+			row.addChild(new KeyCaps(keys, this.motion, this.settings.dark, 160));
+			const caption = textAt(row, description, 170, 4, 13);
+			caption.style.wordWrap = true;
+			caption.style.wordWrapWidth = Math.max(100, w - 405);
+			this.settingsRows.addChild(row);
+		});
+
+		textAt(this.settingsRows, m.ui_sound(), 33, 990, 24);
+		this.sliderRow(m.ui_effects_volume(), 'volume', 1043, 0, 100, 1, '%');
+		textAt(this.settingsRows, m.ui_menu_and_gameplay_effects(), 34, 1101, 14, 0x65717c);
 		this.settingsScrollbar = new Graphics();
 		this.settingsScrollbar.x = w - 7;
 		this.drawerContent.addChild(this.settingsScrollbar);		const collect = (node: Container): string => node instanceof Text ? node.text : node.children.map(collect).join(' ');
 		this.searchEntries = this.settingsRows.children.map(node => ({ node, y: node.y, text: collect(node).toLowerCase() }));
 		this.searchEmpty = textAt(this.settingsRows, m.ui_no_matching_settings(), 33, 12, 16, this.theme.muted);
 		this.filterSettings(this.settingsSearch.input.value);
-		
+
 	}
 	private drawSettingsSurface() {
 		const w = Math.min(700, this.width - 36);
-		this.settingsSurface?.clear().rect(0, 0, w, this.height).fill(this.theme.surface).rect(0, 0, 170, this.height).fill(this.theme.sidebar);
+		this.settingsFrame?.layout(w, this.height, this.settingsScroll.offset, this.themeTransition.value);
 	}
 	private updateTheme() {
 		if (this.lastTheme === this.themeTransition.value) return;
@@ -866,10 +892,11 @@ export class GameClient {
 			entry.node.y = words.length ? y : entry.y;
 			if (entry.node.visible) y += entry.node.height + 14;
 		}
-		this.settingsContentHeight = words.length ? y + 20 : 1010;
+		this.settingsContentHeight = words.length ? y + 20 : 1160;
 		if (this.searchEmpty) this.searchEmpty.visible = words.length > 0 && !this.searchEntries.some(entry => entry.node.visible);
-		this.settingsScroll.max = Math.max(0, this.settingsContentHeight - (this.height - 124));
-		this.settingsScroll.offset = this.settingsScroll.target = 0;
+		this.settingsScroll.max = Math.max(0, this.settingsContentHeight + SettingsPanelFrame.header - SettingsPanelFrame.viewportHeight(this.height));
+		this.selectedSettingsSection = null;
+		this.settingsScroll.scrollTo(0);
 		this.focus = -1;
 	}
 	private settingRow(title: string, value: string, y: number, run: () => void) {
@@ -956,6 +983,7 @@ export class GameClient {
 			value.text = `${this.settings[key]}${unit}`;
 		};
 		const set = (v: number) => {
+			if (!Number.isFinite(v)) return;
 			this.settings[key] = Math.min(max, Math.max(min, Math.round(v / step) * step));
 			redraw();
 		};
@@ -963,11 +991,20 @@ export class GameClient {
 			set(this.settings[key] + direction * step);
 			this.saveSettings();
 		};
+		const editor = new NumberEditor(this.host);
+		root.on('destroyed', () => editor.destroy());
+		const edit = () => {
+			editor.open(title, value, left - 55, this.settings[key], this.theme.accent, next => {
+				set(next);
+				this.saveSettings();
+			});
+		};
 		redraw();
 		root.eventMode = 'static';
 		root.cursor = 'pointer';
 		root.hitArea = new Rectangle(20, 0, w - 40, 48);
 		root.on('pointerdown', (e) => {
+			if (root.toLocal(e.global).x < left) return;
 			const rect = this.host.getBoundingClientRect();
 			const x0 = root.toGlobal({ x: left, y: 0 }).x + rect.left;
 			const length = (right - left) * this.stage.scale.x;
@@ -975,8 +1012,11 @@ export class GameClient {
 			this.sliderDrag(e.clientX);
 			this.saveSettings();
 		});
+		root.on('pointertap', (e) => {
+			if (root.toLocal(e.global).x < left) edit();
+		});
 		this.settingsRows.addChild(root);
-		this.panelActions.push(() => adjust(1));
+		this.panelActions.push(edit);
 		this.panelAdjust.push(adjust);
 		this.panelFocus.push(bg);
 	}
@@ -1042,7 +1082,7 @@ export class GameClient {
 						y < this.settingsScroll.offset ||
 						y + 48 > this.settingsScroll.offset + this.height - 124
 					)
-						this.scrollSettings(y - 24);
+						this.scrollSettings(y + SettingsPanelFrame.header - 24);
 				}
 			} else if (key === 'Enter' || key === 'Space') {
 				const index = this.focus;
@@ -1264,16 +1304,20 @@ export class GameClient {
 		if (this.panel) for (const draw of this.toggleDraws) draw();
 		if (this.panel === 'settings') {
 			const offset = this.settingsScroll.offset;
-			this.settingsRows.y = -offset;
+			this.settingsRows.y = -Math.max(0, offset - SettingsPanelFrame.header);
+			const contentY = SettingsPanelFrame.contentY(offset);
+			if (this.settingsViewport) this.settingsViewport.y = contentY;
+			this.settingsMask?.clear().rect(170, contentY, Math.min(700, this.width - 36) - 170, this.height - contentY).fill(0xffffff);
+			this.drawSettingsSurface();
 			const section =
-				offset >= this.settingsScroll.max - 1 && offset > 0 ? 2 : offset >= 365 ? 1 : 0;
-			this.settingsSelection.y = 117 + section * 64;
-			const height = this.height - 124;
+				this.selectedSettingsSection ?? (offset >= this.settingsScroll.max - 1 && offset > 0 ? 2 : offset >= 465 ? 1 : 0);
+			this.settingsSelection.y = 45 + section * 46;
+			const height = this.height - contentY;
 			const thumb = height * Math.min(1, height / this.settingsContentHeight);
 			this.settingsScrollbar.clear();
 			if (this.settingsScroll.max > 0)
 				this.settingsScrollbar
-					.roundRect(0, 116 + ((height - thumb) * offset) / this.settingsScroll.max, 3, thumb, 1.5)
+					.roundRect(0, contentY + ((height - thumb) * offset) / this.settingsScroll.max, 3, thumb, 1.5)
 					.fill({ color: this.theme.accent, alpha: 0.45 });
 		}
 		this.sound.volume = this.settings.volume;
@@ -1331,17 +1375,21 @@ export class GameClient {
 		this.drawerShade.alpha = v.drawer;
 		this.drawerContent.x = -740 * (1 - v.drawer);
 		const bounds = this.host.getBoundingClientRect();
-		this.settingsSearch?.layout(bounds.left + (this.drawerContent.x + 190) * this.stage.scale.x, bounds.top + 40 * this.stage.scale.y, (Math.min(700, w - 36) - 235) * this.stage.scale.x, this.stage.scale.y, this.theme.text, this.panel === 'settings');
+		this.settingsSearch?.layout(bounds.left + (this.drawerContent.x + 190) * this.stage.scale.x, bounds.top + (SettingsPanelFrame.searchY(this.settingsScroll.offset) + 6) * this.stage.scale.y, (Math.min(700, w - 36) - 260) * this.stage.scale.x, this.stage.scale.y, this.theme.text, this.panel === 'settings');
 		this.drawer.eventMode = this.panel ? 'auto' : 'none';
 		this.dropGlow.clear();
 		if (v.drop > 0.01) this.dropGlow.rect(-130, 294, 260, 4).fill({ color: menuColors.solo, alpha: v.drop });
 		if (this.screen === 'game' && !this.paused && !this.panel && !this.finished) {
 			this.time += elapsed;
 			for (const [key, held] of this.held) {
-				if (now >= held.next) {
-					this.input(key);
-					held.next = now + (key === 'ArrowDown' ? 25 : this.settings.arr);
+				const count = consumeRepeats(held, now, key === 'ArrowDown' ? 25 : this.settings.arr);
+				let moved = false;
+				// Stop at collision, including instant ARR; never loop unbounded on zero.
+				for (let i = 0; i < count; i++) {
+					if (!this.game.move(key === 'ArrowLeft' ? -1 : key === 'ArrowRight' ? 1 : 0, key === 'ArrowDown' ? 1 : 0)) break;
+					moved = true;
 				}
+				if (moved) { this.dirty = true; this.sound.play('move'); }
 			}
 			if (this.mode === 'sprint' || this.settings.gravity) {
 				this.gravity += dt;
@@ -1356,7 +1404,7 @@ export class GameClient {
 		if (this.dirty) this.drawGame();
 		if (now - this.lastClock > 80) {
 			this.timeText.text = formatTime(this.time);
-			this.toolbarUI.tick(now);
+			this.toolbarUI.tick(now, this.settings.volume);
 			this.lastClock = now;
 		}
 	};

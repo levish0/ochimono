@@ -26,11 +26,11 @@ export function readSettings(): Settings {
 			if (typeof raw[key] === 'boolean') s[key] = raw[key];
 		for (const [key, min, max] of [
 			['volume', 0, 100],
-			['das', 80, 250],
-			['arr', 10, 100]
+			['das', 0, 500],
+			['arr', 0, 100]
 		] as const)
 			if (typeof raw[key] === 'number' && Number.isFinite(raw[key]))
-				s[key] = Math.min(max, Math.max(min, raw[key]));
+				s[key] = Math.min(max, Math.max(min, Math.round(raw[key])));
 		return s;
 	} catch {
 		return { ...defaults };

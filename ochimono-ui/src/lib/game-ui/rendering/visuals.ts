@@ -29,7 +29,12 @@ import navFull from '@iconify-icons/heroicons/arrows-pointing-out';
 import navRestore from '@iconify-icons/heroicons/arrows-pointing-in';
 import navNotifications from '@iconify-icons/heroicons/bell';
 
+import search from '@iconify-icons/heroicons/magnifying-glass';
+import navMute from '@iconify-icons/heroicons/speaker-x-mark';
+
 const glyphs = {
+	search,
+	navMute,
 	navRestore,
 	navNotifications,
 	navHome,
