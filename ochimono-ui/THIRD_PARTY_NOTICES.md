@@ -1,5 +1,10 @@
 # Third-party notices
 
+The project is licensed under the GNU Affero General Public License, version 3,
+as provided in the repository's [LICENSE](../LICENSE). The upstream MIT notices
+below are preserved for the incorporated code; they do not replace the project's
+AGPL license or license the entire application under MIT.
+
 ## UI reference and adapted behavior
 
 Parts of the game UI behavior are adapted from the MIT-licensed code in
@@ -12,6 +17,4 @@ The original copyright and full permission notice are included in
 [static/licenses/ppy-mit.txt](static/licenses/ppy-mit.txt), which is also shipped
 with the application at `/licenses/ppy-mit.txt`.
 
-This notice does not grant rights to branding or game resources. Resources from
-`ppy/osu-resources` have separate licensing and are not covered by the MIT notice.
-Check each asset's license before incorporating it.
+This attribution covers adapted source code behavior, not game assets or branding.
