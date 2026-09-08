@@ -1,12 +1,14 @@
 import { Container, Graphics } from 'pixi.js';
 import { label } from '$lib/game-ui/rendering/visuals';
-import { themes } from '$lib/game-ui/theme';
+import { themeAt } from '$lib/game-ui/theme';
 import { Motion, ease } from '$lib/game-ui/motion/motion';
 
 export class KeyCaps extends Container {
+	private painters: ((theme: ReturnType<typeof themeAt>) => void)[] = [];
+
 	constructor(keys: string[], motion: Motion, dark: boolean, maxWidth = 160) {
 		super();
-		const theme = dark ? themes.dark : themes.light;
+		const theme = themeAt(dark ? 1 : 0);
 		let x = 0,
 			y = 0;
 		const releases: (() => void)[] = [];
@@ -19,13 +21,17 @@ export class KeyCaps extends Container {
 			}
 			const cap = new Container();
 			cap.position.set(x, y);
-			cap.addChild(
-				new Graphics()
+			const background = new Graphics();
+			cap.addChild(background);
+			this.painters.push((theme) => {
+				background
+					.clear()
 					.roundRect(0, 2, width, 28, 7)
 					.fill({ color: theme.text, alpha: 0.15 })
 					.roundRect(0, 0, width, 27, 7)
-					.fill(dark ? 0x36414b : 0xe8edef)
-			);
+					.fill(theme.keycap);
+				text.style.fill = theme.text;
+			});
 			text.anchor.set(0.5);
 			text.position.set(width / 2, 13);
 			cap.addChild(text);
@@ -59,6 +65,12 @@ export class KeyCaps extends Container {
 			});
 			x += width + 6;
 		}
+		this.updateTheme(dark ? 1 : 0);
 		this.on('destroyed', () => releases.forEach((release) => release()));
+	}
+
+	updateTheme(progress: number) {
+		const theme = themeAt(progress);
+		this.painters.forEach((paint) => paint(theme));
 	}
 }

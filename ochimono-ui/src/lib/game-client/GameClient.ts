@@ -755,6 +755,10 @@ export class GameClient {
 	}
 	private styleDrawer() {
 		const visit = (node: Container) => {
+			if (node instanceof KeyCaps) {
+				node.updateTheme(this.themeTransition.value);
+				return;
+			}
 			if (node instanceof Text)
 				node.style.fill =
 					node.style.fill === mint || node.style.fill === this.theme.accent

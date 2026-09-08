@@ -12,6 +12,7 @@ export const themes = {
 		sidebar: 0xf1f1f5,
 		text: 0x202127,
 		muted: 0x656570,
+		keycap: 0xe8edef,
 		accent: primary
 	},
 	dark: {
@@ -20,6 +21,7 @@ export const themes = {
 		sidebar: 0x17171e,
 		text: 0xf4f4fa,
 		muted: 0xa6a6b5,
+		keycap: 0x36414b,
 		accent: primary
 	}
 };
