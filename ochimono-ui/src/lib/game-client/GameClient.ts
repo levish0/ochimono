@@ -891,7 +891,7 @@ export class GameClient {
 			.roundRect(20, 0, w - 40, 48, 4)
 			.fill({ color: this.theme.text, alpha: this.settings.dark ? 0.025 : 0.025 });
 		root.addChild(bg);
-		textAt(root, title, 34, 14, 16);
+		const caption = textAt(root, title, 34, 0, 16);
 		const v = textAt(root, value, w - 37, 14, 16, mint);
 		v.anchor.x = 1;
 		root.eventMode = 'static';
@@ -965,6 +965,9 @@ export class GameClient {
 				.roundRect(Math.max(left, Math.min(right - 10, x - 5)), 8, 10, 32, 5)
 				.fill(0xffffff);
 			value.text = `${this.settings[key]}${unit}`;
+			const textHeight = caption.height + 4 + value.height;
+			caption.y = (48 - textHeight) / 2;
+			value.y = caption.y + caption.height + 4;
 		};
 		const set = (v: number) => {
 			if (!Number.isFinite(v)) return;
