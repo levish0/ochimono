@@ -1,0 +1,31 @@
+name: Server build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: Server / build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ochimono-server
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@1.98.1
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "ochimono-server -> target"
+
+      - name: Release Build
+        run: cargo build --workspace --release --locked
+
+      - name: Container Build
+        run: docker build -t ochimono-server:ci .

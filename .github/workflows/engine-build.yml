@@ -1,4 +1,4 @@
-name: build
+name: Engine build
 
 on:
   push:
@@ -6,11 +6,12 @@ on:
 
 jobs:
   build:
+    name: Engine / build
     runs-on: ubuntu-latest
 
     defaults:
       run:
-        working-directory: ochimono-server
+        working-directory: ochimono-engine
 
     steps:
       - uses: actions/checkout@v7
@@ -21,10 +22,7 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: "ochimono-server -> target"
+          workspaces: "ochimono-engine -> target"
 
       - name: Release Build
         run: cargo build --workspace --release --locked
-
-      - name: Container Build
-        run: docker build -t ochimono-server:ci .

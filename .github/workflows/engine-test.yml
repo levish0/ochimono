@@ -1,4 +1,4 @@
-name: test
+name: Engine test
 
 on:
   push:
@@ -6,11 +6,12 @@ on:
 
 jobs:
   test:
+    name: Engine / test
     runs-on: ubuntu-latest
 
     defaults:
       run:
-        working-directory: ochimono-server
+        working-directory: ochimono-engine
 
     steps:
       - uses: actions/checkout@v7
@@ -21,7 +22,7 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: "ochimono-server -> target"
+          workspaces: "ochimono-engine -> target"
 
       - name: Run tests
         run: cargo test --workspace --all-targets --locked

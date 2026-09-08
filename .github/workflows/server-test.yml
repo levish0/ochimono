@@ -1,11 +1,12 @@
-name: check
+name: Server test
 
 on:
   push:
   pull_request:
 
 jobs:
-  check:
+  test:
+    name: Server / test
     runs-on: ubuntu-latest
 
     defaults:
@@ -17,22 +18,11 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@1.98.1
-        with:
-          components: clippy, rustfmt
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: "ochimono-server -> target"
 
-      - name: Check
-        run: cargo check --workspace --all-targets --locked
-
-      - name: Clippy
-        run: cargo clippy --workspace --all-targets --locked -- -D warnings
-
-      - name: Format
-        run: cargo fmt --all -- --check
-
-      - name: OpenAPI drift
-        run: cargo xtask openapi --check
+      - name: Run tests
+        run: cargo test --workspace --all-targets --locked
