@@ -1,0 +1,83 @@
+name: UI CI
+
+on:
+  push:
+    paths:
+      - 'ochimono-ui/**'
+      - '.github/workflows/ui.yml'
+  pull_request:
+    paths:
+      - 'ochimono-ui/**'
+      - '.github/workflows/ui.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ui-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ui:
+    name: UI / ${{ matrix.task }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [check, lint, build, test]
+    defaults:
+      run:
+        working-directory: ochimono-ui
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: ochimono-ui/.nvmrc
+
+      - name: Install pnpm
+        run: npm install -g pnpm@11.5.0
+
+      - name: Locate pnpm store
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-ui-pnpm-${{ hashFiles('ochimono-ui/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-ui-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        if: matrix.task == 'test'
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Check types
+        if: matrix.task == 'check'
+        run: pnpm check
+
+      - name: Check formatting and lint
+        if: matrix.task == 'lint'
+        run: pnpm lint
+
+      - name: Build
+        if: matrix.task == 'build'
+        run: pnpm build
+
+      - name: Unit tests
+        if: matrix.task == 'test'
+        run: pnpm test:unit --run
+
+      - name: Browser tests
+        if: matrix.task == 'test'
+        run: pnpm exec playwright test
