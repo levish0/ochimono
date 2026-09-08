@@ -1,0 +1,69 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ochimono API",
+    "description": "",
+    "license": {
+      "name": "AGPL-3.0-only"
+    },
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health/live": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Check HTTP process liveness",
+        "description": "Reports process liveness only. Does not verify PostgreSQL, Redis, authentication or game availability.",
+        "operationId": "live",
+        "responses": {
+          "200": {
+            "description": "HTTP process is alive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "version"
+        ],
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

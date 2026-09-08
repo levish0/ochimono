@@ -23,3 +23,7 @@ target
 # Added by cargo
 
 /target
+
+.env
+.env.*
+!.env.example

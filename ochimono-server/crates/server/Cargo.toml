@@ -1,0 +1,28 @@
+[package]
+name = "server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+config.workspace = true
+dto.workspace = true
+errors.workspace = true
+axum.workspace = true
+tokio.workspace = true
+tower-http.workspace = true
+utoipa.workspace = true
+utoipa-swagger-ui.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+dotenvy.workspace = true
+anyhow.workspace = true
+
+[dev-dependencies]
+reqwest.workspace = true
+serde_json.workspace = true

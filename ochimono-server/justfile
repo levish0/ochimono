@@ -1,0 +1,68 @@
+set windows-shell := ["powershell.exe", "-NoLogo", "-NoProfile", "-Command"]
+set dotenv-load := true
+
+default:
+    @just --list
+
+# Start the HTTP process locally; no database is required by the scaffold.
+run:
+    cargo run --locked -p server
+
+# Prepare the local database and Redis. Copy .env.example to .env first.
+dev: up-infra migrate
+
+up-infra:
+    docker compose -f docker-compose.dev.yml up -d --wait postgres redis
+
+up:
+    docker compose -f docker-compose.dev.yml up -d --build --wait
+
+down:
+    docker compose -f docker-compose.dev.yml down
+
+# Destructive: remove the local development database and Redis volumes.
+prune:
+    docker compose -f docker-compose.dev.yml down -v
+
+status:
+    docker compose -f docker-compose.dev.yml ps -a
+
+logs *args:
+    docker compose -f docker-compose.dev.yml logs -f {{args}}
+
+migrate:
+    cargo run --locked -p migration -- up
+
+migrate-status:
+    cargo run --locked -p migration -- status
+
+# Destructive: rebuild the database schema.
+migrate-fresh:
+    cargo run --locked -p migration -- fresh
+
+fmt:
+    cargo fmt --all
+
+check:
+    cargo fmt --all --check
+    cargo clippy --workspace --all-targets --locked -- -D warnings
+    cargo test --workspace --locked
+    cargo xtask openapi --check
+
+test *args:
+    cargo test --workspace --locked {{args}}
+
+# Real TCP smoke test; database-backed game/auth E2E is not implemented yet.
+e2e:
+    cargo test --locked -p server --test http
+
+openapi:
+    cargo xtask openapi
+
+build:
+    docker build -t ochimono-server:local .
+
+# Explicitly publish a caller-specified registry image and tag.
+publish image:
+    docker build -t {{image}} .
+    docker push {{image}}

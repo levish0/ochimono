@@ -15,20 +15,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Install Bevy platform dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y g++ pkg-config libx11-dev libudev-dev libwayland-dev libxkbcommon-dev
-
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.98.1
         with:
           components: clippy, rustfmt
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: "."
+          workspaces: "ochimono-server -> target"
 
       - name: Check
         run: cargo check --workspace --all-targets --locked
@@ -38,3 +33,6 @@ jobs:
 
       - name: Format
         run: cargo fmt --all -- --check
+
+      - name: OpenAPI drift
+        run: cargo xtask openapi --check
