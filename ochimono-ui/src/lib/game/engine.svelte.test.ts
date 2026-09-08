@@ -3,6 +3,30 @@ import { PracticeGame, type GameAction } from './engine';
 import fixture from './fixtures/replay.json';
 
 describe('shared WASM game engine', () => {
+	it('allows initial rotation to escape a spawn collision before block-out', () => {
+		const game = new PracticeGame('zen', { entryDelay: 100, irs: 'tap', ihs: 'tap' });
+		try {
+			const state = JSON.parse(game.snapshot());
+			state.piece = 'O';
+			state.x = 0;
+			state.y = 18;
+			state.lowest_y = 18;
+			state.queue[0] = 'I';
+			state.hold = 'T';
+			state.board[19][3] = 'Z';
+			game.restore(JSON.stringify(state));
+			game.input('hard_drop');
+			game.advance(1000);
+			game.input('hold');
+			game.input('clockwise');
+			game.advance(6000);
+			expect(game.state.over).toBe(false);
+			expect(game.state.piece).toBe('T');
+			expect(JSON.parse(game.snapshot()).rotation).toBe(1);
+		} finally {
+			game.destroy();
+		}
+	});
 	it('applies handling settings through WASM and consumes buffered rotation at spawn', () => {
 		const game = new PracticeGame('zen', {
 			entryDelay: 100,

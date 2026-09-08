@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 
 const root = new URL('../', import.meta.url);
 const source = new URL('pkg-npm/', root);
@@ -9,6 +9,9 @@ for (const file of [...manifest.files, 'package.json']) {
     await copyFile(new URL(file, source), new URL(file, destination));
 }
 await copyFile(new URL('README.md', root), new URL('README.md', destination));
+await copyFile(new URL('VERIFICATION.md', root), new URL('VERIFICATION.md', destination));
+manifest.files = [...new Set([...manifest.files, 'VERIFICATION.md'])];
+await writeFile(new URL('package.json', destination), `${JSON.stringify(manifest, null, 2)}\n`);
 await copyFile(new URL('../LICENSE', root), new URL('LICENSE', destination));
 await copyFile(
     new URL('tests/fixtures/replay.json', root),

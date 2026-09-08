@@ -7,6 +7,39 @@ fn game(handling: Handling, entry_delay: u64) -> Game {
     Game::new(42, rules, handling).unwrap()
 }
 
+#[test]
+fn initial_rotation_and_hold_can_escape_spawn_collision_before_block_out() {
+    for with_hold in [false, true] {
+        let mut game = game(
+            Handling {
+                irs: BufferMode::Tap,
+                ihs: BufferMode::Tap,
+                ..Handling::default()
+            },
+            6000,
+        );
+        let mut state = game.snapshot();
+        state.piece = Piece::O;
+        state.x = 0;
+        state.y = 18;
+        state.lowest_y = 18;
+        state.queue[0] = if with_hold { Piece::I } else { Piece::T };
+        state.hold = with_hold.then_some(Piece::T);
+        // The initial T overlaps this cell; the clockwise orientation does not.
+        state.board[19][3] = Some(Piece::Z);
+        game = Game::from_snapshot(state).unwrap();
+        input(&mut game, 0, Action::HardDrop, true);
+        if with_hold {
+            input(&mut game, 1000, Action::Hold, true);
+        }
+        input(&mut game, 2000, Action::Clockwise, true);
+        game.advance_to(6000).unwrap();
+        assert!(!game.view().over, "IHS before IRS: {with_hold}");
+        assert_eq!(game.snapshot().rotation, 1);
+        assert_eq!(game.snapshot().piece, Piece::T);
+    }
+}
+
 fn input(game: &mut Game, at: u64, action: Action, pressed: bool) {
     game.input(Input {
         at,

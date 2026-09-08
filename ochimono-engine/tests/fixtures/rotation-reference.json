@@ -1,0 +1,24 @@
+{
+  "verified_on": "2026-09-09",
+  "scope": "Transcription of osk's published diagrams, not live-client replay parity",
+  "coordinate_system": "Quarter turns clockwise; positive kick Y points upward",
+  "sources": [
+    "https://tetris.wiki/File:TETR.IO_SRS%2Bkicks.png",
+    "https://tetris.wiki/File:TETR.IO_180kicks.png",
+    "https://github.com/tetrio/issues/issues/478"
+  ],
+  "cases": [
+    { "piece": "I", "from": 0, "to": 1, "kicks": [[0,0],[1,0],[-2,0],[-2,-1],[1,2]] },
+    { "piece": "I", "from": 0, "to": 3, "kicks": [[0,0],[-1,0],[2,0],[2,-1],[-1,2]] },
+    { "piece": "I", "from": 1, "to": 0, "kicks": [[0,0],[-1,0],[2,0],[-1,-2],[2,1]] },
+    { "piece": "I", "from": 1, "to": 2, "kicks": [[0,0],[-1,0],[2,0],[-1,2],[2,-1]] },
+    { "piece": "I", "from": 2, "to": 1, "kicks": [[0,0],[-2,0],[1,0],[-2,1],[1,-2]] },
+    { "piece": "I", "from": 2, "to": 3, "kicks": [[0,0],[2,0],[-1,0],[2,1],[-1,-2]] },
+    { "piece": "I", "from": 3, "to": 2, "kicks": [[0,0],[1,0],[-2,0],[1,2],[-2,-1]] },
+    { "piece": "I", "from": 3, "to": 0, "kicks": [[0,0],[1,0],[-2,0],[1,-2],[-2,1]] },
+    { "piece": "T", "from": 0, "to": 2, "kicks": [[0,0],[0,1],[1,1],[-1,1],[1,0],[-1,0]] },
+    { "piece": "T", "from": 2, "to": 0, "kicks": [[0,0],[0,-1],[-1,-1],[1,-1],[-1,0],[1,0]] },
+    { "piece": "T", "from": 1, "to": 3, "kicks": [[0,0],[1,0],[1,2],[1,1],[0,2],[0,1]] },
+    { "piece": "T", "from": 3, "to": 1, "kicks": [[0,0],[-1,0],[-1,2],[-1,1],[0,2],[0,1]] }
+  ]
+}

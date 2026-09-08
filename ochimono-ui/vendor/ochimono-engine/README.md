@@ -2,6 +2,9 @@
 
 Deterministic falling-block simulation for native Rust and WebAssembly.
 
+See [reference verification](VERIFICATION.md) for checked source diagrams,
+the corrected IRS/IHS ordering, confirmed compatibility gaps and pending live measurements.
+
 The engine is a single crate. `Game` owns the board, bag generator, input state,
 timers, and solo run state. Rendering, browser events, authentication, persistence,
 and matchmaking belong to its callers. The optional `wasm` feature exposes the
@@ -83,7 +86,8 @@ not frame-exact compatibility with every current mode.
 | Zen entry delay | Optional gap between pieces in which TAP buffering can be exercised; Sprint retains its fixed zero-delay rules. |
 | Rotation keys | Clockwise, counterclockwise and 180 degrees; multiple physical keys for one action release it only when the last key is released. |
 
-IHS runs before IRS. With multiple held rotation actions, their quarter turns are
+IHS and IRS/kicks run before the final block-out check, matching the official
+Beta 1.5.0/1.5.1 behavior descriptions. With multiple held rotation actions, their quarter turns are
 summed modulo four. TAP consumes its buffer once at spawn; pause, focus loss and
 handling changes clear held keys and buffers. Delayed snapshots preserve the
 spawn deadline and pending inputs. These ordering choices are explicit Ochimono

@@ -170,6 +170,11 @@ impl Game {
     }
 
     fn spawn(&mut self, held: Option<Piece>) {
+        self.prepare_spawn(held);
+        self.finish_spawn();
+    }
+
+    fn prepare_spawn(&mut self, held: Option<Piece>) {
         self.state.spawn_at = None;
         self.replenish();
         self.state.piece = held.unwrap_or_else(|| self.state.queue.remove(0));
@@ -183,13 +188,16 @@ impl Game {
         self.state.last_kick = None;
         self.state.gravity_at = (self.state.rules.gravity_interval > 0)
             .then_some(self.state.time + self.state.rules.gravity_interval);
+    }
+
+    fn finish_spawn(&mut self) {
         self.state.over = !self.fits(self.state.x, self.state.y, self.state.rotation);
         self.cut_das();
         self.grounded(false);
     }
 
     fn spawn_buffered(&mut self) {
-        self.spawn(None);
+        self.prepare_spawn(None);
         let hold = match self.state.handling.ihs {
             BufferMode::Off => false,
             BufferMode::Hold => self.state.input.hold,
@@ -197,7 +205,7 @@ impl Game {
         };
         if hold {
             let previous = self.state.hold.replace(self.state.piece);
-            self.spawn(previous);
+            self.prepare_spawn(previous);
             self.state.held = true;
         }
         let rotation = match self.state.handling.irs {
@@ -216,9 +224,10 @@ impl Game {
         };
         self.state.input.buffered_rotation = 0;
         self.state.input.buffered_hold = false;
-        if rotation != 0 && !self.state.over {
-            self.rotate(rotation);
+        if rotation != 0 {
+            self.try_rotate(rotation);
         }
+        self.finish_spawn();
         self.checkpoint = self.state.clone();
     }
 
@@ -279,8 +288,15 @@ impl Game {
     }
 
     fn rotate(&mut self, amount: u8) {
-        let to = (self.state.rotation + amount) % 4;
         let grounded = !self.fits(self.state.x, self.state.y + 1, self.state.rotation);
+        if self.try_rotate(amount) {
+            self.cut_das();
+            self.grounded(grounded);
+        }
+    }
+
+    fn try_rotate(&mut self, amount: u8) -> bool {
+        let to = (self.state.rotation + amount) % 4;
         for (index, (dx, dy)) in kicks(self.state.piece, self.state.rotation, to)
             .iter()
             .enumerate()
@@ -290,11 +306,10 @@ impl Game {
                 self.state.y -= dy;
                 self.state.rotation = to;
                 self.state.last_kick = Some(index);
-                self.cut_das();
-                self.grounded(grounded);
-                return;
+                return true;
             }
         }
+        false
     }
 
     fn cut_das(&mut self) {

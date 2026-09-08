@@ -11,7 +11,8 @@
     "ochimono_engine_bg.wasm",
     "ochimono_engine.js",
     "ochimono_engine_bg.js",
-    "ochimono_engine.d.ts"
+    "ochimono_engine.d.ts",
+    "VERIFICATION.md"
   ],
   "main": "ochimono_engine.js",
   "types": "ochimono_engine.d.ts",
