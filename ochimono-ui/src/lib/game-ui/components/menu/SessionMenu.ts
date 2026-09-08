@@ -37,7 +37,7 @@ export class SessionMenu extends Container {
 		this.addChild(this.shade, this.surface);
 	}
 
-	layout(width: number, height: number, _progress: number, _dark = 0) {
+	layout(width: number, height: number) {
 		this.shade.clear().rect(0, 0, width, height).fill({ color: 0x000000, alpha: 0.75 });
 		const menuWidth = Math.max(0, Math.min(720, width - 80));
 		const buttonHeight = Math.min(80, height * 0.105);

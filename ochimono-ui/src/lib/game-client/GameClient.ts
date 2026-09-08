@@ -572,7 +572,7 @@ export class GameClient {
 		);
 		this.pauseButtons = this.sessionMenu.buttons;
 		this.pauseView.addChild(this.sessionMenu);
-		this.sessionMenu.layout(this.width, this.height, this.visual.pause, this.themeTransition.value);
+		this.sessionMenu.layout(this.width, this.height);
 	}
 	private saveRecord() {
 		if (this.saved || !this.game.state.placed) return;
@@ -1479,7 +1479,7 @@ export class GameClient {
 		this.pauseView.alpha = v.pause;
 		this.pauseView.visible = v.pause > 0.001;
 		this.pauseView.eventMode = this.paused && !this.panel ? 'auto' : 'none';
-		this.sessionMenu?.layout(w, h, v.pause, this.themeTransition.value);
+		this.sessionMenu?.layout(w, h);
 		this.drawer.visible = v.drawer > 0.001;
 		this.drawer.alpha = 1;
 		this.drawerShade.alpha = v.drawer;
