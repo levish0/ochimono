@@ -17,6 +17,19 @@ async fn main() -> anyhow::Result<()> {
         .json()
         .init();
     let config = ServerConfig::from_env()?;
+    let auth = match config::auth::AuthConfig::from_env()? {
+        Some(auth_config) => {
+            if !auth_config.secure_cookies && !config.bind_address.ip().is_loopback() {
+                anyhow::bail!("HTTP development authentication must bind to loopback");
+            }
+            Some(server::service::auth::AuthState::connect(auth_config).await?)
+        }
+        None => None,
+    };
+    let state = AppState {
+        auth,
+        ..Default::default()
+    };
     let listener = tokio::net::TcpListener::bind(config.bind_address)
         .await
         .context("Failed to bind HTTP listener")?;
@@ -38,9 +51,12 @@ async fn main() -> anyhow::Result<()> {
         interrupt.await;
         tracing::info!("Shutting down HTTP server");
     };
-    axum::serve(listener, router(AppState::default()))
-        .with_graceful_shutdown(shutdown)
-        .await
-        .context("HTTP server failed")?;
+    axum::serve(
+        listener,
+        router(state).into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown)
+    .await
+    .context("HTTP server failed")?;
     Ok(())
 }

@@ -1,11 +1,11 @@
 pub use sea_orm_migration::prelude::*;
+mod m20260908_000001_auth;
 
 pub struct Migrator;
 
 #[async_trait::async_trait]
 impl MigratorTrait for Migrator {
     fn migrations() -> Vec<Box<dyn MigrationTrait>> {
-        // Add domain migrations when their persistence contracts are implemented.
-        vec![]
+        vec![Box::new(m20260908_000001_auth::Migration)]
     }
 }

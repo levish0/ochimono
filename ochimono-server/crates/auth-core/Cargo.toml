@@ -1,0 +1,28 @@
+[package]
+name = "auth-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+authors.workspace = true
+repository.workspace = true
+description = "Authentication tokens and session storage"
+
+[lints]
+workspace = true
+
+[dependencies]
+# External dependencies
+blake3 = { workspace = true }
+base64 = { workspace = true }
+rand = { workspace = true }
+# Session contract + store: the shape both the issuing and validating processes must agree on.
+redis = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

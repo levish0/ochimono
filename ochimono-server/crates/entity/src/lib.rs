@@ -1,2 +1,6 @@
-//! PostgreSQL entities belong here, alongside their corresponding migrations.
-//! No account or game tables have been introduced yet.
+pub mod users;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OAuthProvider {
+    Google,
+}

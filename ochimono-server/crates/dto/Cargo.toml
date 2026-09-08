@@ -10,5 +10,13 @@ publish = false
 workspace = true
 
 [dependencies]
+# Internal crates
+errors.workspace = true
+
+# External dependencies
 serde.workspace = true
 utoipa.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+axum.workspace = true
+validator.workspace = true

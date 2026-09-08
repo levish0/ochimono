@@ -4,7 +4,7 @@ set dotenv-load := true
 default:
     @just --list
 
-# Start the HTTP process locally; no database is required by the scaffold.
+# Start the HTTP process locally. Authentication requires PostgreSQL and Redis.
 run:
     cargo run --locked -p server
 
@@ -52,9 +52,14 @@ check:
 test *args:
     cargo test --workspace --locked {{args}}
 
-# Real TCP smoke test; database-backed game/auth E2E is not implemented yet.
+# Real TCP health and OpenAPI smoke test.
 e2e:
     cargo test --locked -p server --test http
+
+# Requires TEST_DATABASE_URL (migrated) and SESSION_REDIS_URL for disposable services.
+auth-test:
+    cargo test --locked -p auth-core --test session_store_redis -- --ignored --test-threads=1
+    cargo test --locked -p server --test auth -- --ignored --test-threads=1
 
 openapi:
     cargo xtask openapi

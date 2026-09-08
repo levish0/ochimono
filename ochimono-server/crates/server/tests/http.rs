@@ -27,6 +27,13 @@ async fn http_contract_and_shutdown() {
     let health: dto::health::HealthResponse = response.json().await.unwrap();
     assert_eq!(health.status, "ok");
     assert_eq!(health.version, env!("CARGO_PKG_VERSION"));
+    let disabled = client
+        .get(format!("{base}/v0/auth/me"))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(disabled.status(), 503);
+    assert_eq!(disabled.headers()["cache-control"], "no-store");
     let schema: Value = client
         .get(format!("{base}/swagger.json"))
         .send()
@@ -51,7 +58,7 @@ async fn http_contract_and_shutdown() {
     assert_eq!(missing.status(), 404);
     assert_eq!(
         missing.json::<Value>().await.unwrap()["code"],
-        "http:not_found"
+        "system:not_found"
     );
     shutdown.send(()).unwrap();
     tokio::time::timeout(Duration::from_secs(5), task)

@@ -9,6 +9,31 @@ jobs:
     name: Server / test
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: ochimono
+          POSTGRES_PASSWORD: ochimono
+          POSTGRES_DB: ochimono_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ochimono -d ochimono_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://ochimono:ochimono@127.0.0.1:5432/ochimono_test
+      TEST_DATABASE_URL: postgres://ochimono:ochimono@127.0.0.1:5432/ochimono_test
+      SESSION_REDIS_URL: redis://127.0.0.1:6379/
+
     defaults:
       run:
         working-directory: ochimono-server
@@ -26,3 +51,12 @@ jobs:
 
       - name: Run tests
         run: cargo test --workspace --all-targets --locked
+
+      - name: Apply authentication migrations
+        run: cargo run --locked -p migration -- up
+
+      - name: Test Redis session integrity
+        run: cargo test --locked -p auth-core --test session_store_redis -- --ignored --test-threads=1
+
+      - name: Test browser authentication
+        run: cargo test --locked -p server --test auth -- --ignored --test-threads=1

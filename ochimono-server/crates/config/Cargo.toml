@@ -10,4 +10,6 @@ publish = false
 workspace = true
 
 [dependencies]
+# External dependencies
 anyhow.workspace = true
+url.workspace = true

@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use std::net::SocketAddr;
+pub mod auth;
 
 /// Process configuration. Environment loading belongs to the executable.
 #[derive(Clone, Debug)]

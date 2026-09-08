@@ -20,6 +20,8 @@ module_inception = "allow"
 
 [workspace.dependencies]
 # Internal crates
+auth-core = { path = "crates/auth-core" }
+entity = { path = "crates/entity" }
 config = { path = "crates/config" }
 dto = { path = "crates/dto" }
 errors = { path = "crates/errors" }
