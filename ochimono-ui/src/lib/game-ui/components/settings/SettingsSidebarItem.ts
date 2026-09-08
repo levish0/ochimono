@@ -35,7 +35,7 @@ export class SettingsSidebarItem extends Container {
 			this.motion.to(this.visual, { height: selected ? 18 : 4 }, 500, selected ? elasticHalf : ease.outQuint);
 		}
 		const theme = themeAt(dark);
-		this.background.clear().rect(5, 5, 160, 36).fill({ color: theme.text, alpha: this.visual.hover * 0.1 });
+		this.background.clear().roundRect(5, 5, 160, 36, 5).fill({ color: theme.text, alpha: this.visual.hover * 0.1 });
 		this.content.tint = this.selected || this.hovered ? theme.text : theme.muted;
 		this.indicator.clear().roundRect(14, 23 - this.visual.height / 2, 4, this.visual.height, 1.5)
 			.fill({ color: theme.accent, alpha: this.visual.alpha });
