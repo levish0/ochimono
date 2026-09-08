@@ -12,7 +12,14 @@ export class SessionMenu extends Container {
 	private heading;
 	private detail;
 
-	constructor(title: string, detail: string, actions: Action[], motion: Motion, sound: Sound, interact: () => void) {
+	constructor(
+		title: string,
+		detail: string,
+		actions: Action[],
+		motion: Motion,
+		sound: Sound,
+		interact: () => void
+	) {
 		super();
 		this.heading = label(title, 48, 0xffdf37);
 		this.heading.style.fontWeight = '600';
@@ -22,7 +29,7 @@ export class SessionMenu extends Container {
 		this.detail.anchor.set(0.5);
 		this.detail.style.align = 'center';
 		this.surface.addChild(this.heading, this.detail);
-		this.buttons = actions.map(action => {
+		this.buttons = actions.map((action) => {
 			const button = new MenuButton(action, motion, sound, interact, 'dialog');
 			this.surface.addChild(button.root);
 			return button;
@@ -34,7 +41,7 @@ export class SessionMenu extends Container {
 		this.shade.clear().rect(0, 0, width, height).fill({ color: 0x000000, alpha: 0.75 });
 		const menuWidth = Math.max(0, Math.min(720, width - 80));
 		const buttonHeight = Math.min(80, height * 0.105);
-		const heights = this.buttons.map(button => buttonHeight * (1 + button.visual.hover * 0.5));
+		const heights = this.buttons.map((button) => buttonHeight * (1 + button.visual.hover * 0.5));
 		const total = heights.reduce((sum, value) => sum + value, 0);
 		const top = (height - total) / 2;
 		const restingTop = (height - this.buttons.length * buttonHeight) / 2;

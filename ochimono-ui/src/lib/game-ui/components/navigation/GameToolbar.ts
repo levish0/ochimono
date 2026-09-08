@@ -82,7 +82,7 @@ export class GameToolbar extends Container {
 		this.clock.position.set(width - 174, 0);
 		this.notifications.x = width - 20;
 	}
-	 tick(now: number, volume: number) {
+	tick(now: number, volume: number) {
 		const muted = volume === 0;
 		if (muted !== this.muted) {
 			this.muted = muted;

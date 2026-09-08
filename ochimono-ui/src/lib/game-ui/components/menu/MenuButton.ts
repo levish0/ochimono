@@ -37,7 +37,8 @@ export class MenuButton {
 			title.position.set(0, 0);
 			title.style.fontSize = 26;
 			title.style.fontWeight = '300';
-			title.style.fill = action.color === 0x25e6ef || action.color === 0xffdf37 ? 0x17191f : 0xffffff;
+			title.style.fill =
+				action.color === 0x25e6ef || action.color === 0xffdf37 ? 0x17191f : 0xffffff;
 		}
 		if (layout === 'home') {
 			const ink = action.color === 0x25e6ef || action.color === 0xffdf37 ? 0x17191f : 0xffffff;

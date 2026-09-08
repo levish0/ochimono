@@ -56,7 +56,9 @@ export class GameClient {
 	private blocks = new Graphics();
 	private previews = new Graphics();
 	private dropGlow = new Graphics();
-	private get theme() { return themeAt(this.themeTransition.value); }
+	private get theme() {
+		return themeAt(this.themeTransition.value);
+	}
 	private pauseView = new Container();
 	private pauseControl?: Container;
 	private sessionMenu?: SessionMenu;
@@ -467,7 +469,14 @@ export class GameClient {
 			0x657078
 		);
 		help.anchor.set(0.5, 0);
-		this.pauseControl = this.toolButton(this.gameView, 'pause', 268, -278, () => this.pause(true), m.ui_pause());
+		this.pauseControl = this.toolButton(
+			this.gameView,
+			'pause',
+			268,
+			-278,
+			() => this.pause(true),
+			m.ui_pause()
+		);
 	}
 	private start(mode: Mode) {
 		this.panel = null;
@@ -492,12 +501,7 @@ export class GameClient {
 			400,
 			ease.inSine
 		);
-		this.motion.to(
-			this.visual,
-			{ gameAlpha: 1, gameX: 0, dim: 0, pause: 0 },
-			600,
-			ease.outQuint
-		);
+		this.motion.to(this.visual, { gameAlpha: 1, gameX: 0, dim: 0, pause: 0 }, 600, ease.outQuint);
 		this.motion.to(this.visual, { toolbar: 0 }, 500, ease.outQuint);
 		this.motion.to(this.visual, { toolbarAlpha: 0 }, 500, ease.inQuint);
 		this.announce(m.ui_session_started({ mode: mode === 'zen' ? 'Zen' : '40 Lines' }));
@@ -550,13 +554,21 @@ export class GameClient {
 							run: () => this.pause(false)
 						}
 					]),
-			{ title: m.ui_retry(), glyph: 'retry', color: menuColors.records, run: () => this.start(this.mode) },
+			{
+				title: m.ui_retry(),
+				glyph: 'retry',
+				color: menuColors.records,
+				run: () => this.start(this.mode)
+			},
 			{ title: m.ui_leave(), glyph: 'back', color: menuColors.multiplayer, run: () => this.home() }
 		];
 		this.sessionMenu = new SessionMenu(
 			this.finished ? (this.game.state.over ? m.ui_game_over() : m.ui_complete()) : m.ui_paused(),
 			`${this.titleText.text}\n${this.game.state.lines} ${m.ui_lines()}\n${formatTime(this.time)}`,
-			actions, this.motion, this.sound, this.interact
+			actions,
+			this.motion,
+			this.sound,
+			this.interact
 		);
 		this.pauseButtons = this.sessionMenu.buttons;
 		this.pauseView.addChild(this.sessionMenu);
@@ -696,7 +708,12 @@ export class GameClient {
 			];
 			let rowY = 160;
 			rows.forEach(([key, desc]) => {
-				const keyText = new KeyCaps(key.split(/[ /·]+/).filter(Boolean), this.motion, this.settings.dark, 150);
+				const keyText = new KeyCaps(
+					key.split(/[ /·]+/).filter(Boolean),
+					this.motion,
+					this.settings.dark,
+					150
+				);
 				keyText.position.set(33, rowY);
 				this.drawerContent.addChild(keyText);
 				const description = textAt(this.drawerContent, desc, 205, rowY, 15);
@@ -736,7 +753,11 @@ export class GameClient {
 	}
 	private styleDrawer() {
 		const visit = (node: Container) => {
-			if (node instanceof Text) node.style.fill = node.style.fill === mint || node.style.fill === this.theme.accent ? this.theme.accent : this.theme.text;
+			if (node instanceof Text)
+				node.style.fill =
+					node.style.fill === mint || node.style.fill === this.theme.accent
+						? this.theme.accent
+						: this.theme.text;
 			if (node instanceof Sprite) node.tint = this.theme.muted;
 			node.children.forEach(visit);
 		};
@@ -759,14 +780,22 @@ export class GameClient {
 		this.drawerContent.removeChildren().forEach((c) => c.destroy({ children: true }));
 		const w = Math.min(700, this.width - 36);
 		const viewportHeight = SettingsPanelFrame.viewportHeight(this.height);
-		this.settingsScroll.max = Math.max(0, this.settingsContentHeight + SettingsPanelFrame.header - viewportHeight);
+		this.settingsScroll.max = Math.max(
+			0,
+			this.settingsContentHeight + SettingsPanelFrame.header - viewportHeight
+		);
 		this.settingsScroll.offset = Math.min(this.settingsScroll.offset, this.settingsScroll.max);
 		this.settingsScroll.target = this.settingsScroll.offset;
 		this.settingsFrame = new SettingsPanelFrame(m.ui_settings());
 		this.drawerContent.addChild(this.settingsFrame);
 		this.drawSettingsSurface();
 
-		this.settingsSearch ??= new SettingsSearch(this.host, m.ui_search_settings(), query => this.filterSettings(query), () => this.closePanel());
+		this.settingsSearch ??= new SettingsSearch(
+			this.host,
+			m.ui_search_settings(),
+			(query) => this.filterSettings(query),
+			() => this.closePanel()
+		);
 
 		this.settingsSidebar = [];
 		const sections = [
@@ -775,9 +804,19 @@ export class GameClient {
 			[m.ui_sound(), 'sound', 978]
 		] as const;
 		sections.forEach(([title, glyph, offset], i) => {
-			const row = new SettingsSidebarItem(title, glyph, this.motion,
-				() => { if (this.settingsSearch?.input.value) { this.settingsSearch.input.value = ''; this.filterSettings(''); } this.scrollSettings(offset === 0 ? 0 : offset + SettingsPanelFrame.header, i); },
-				() => this.sound.play('hover'));
+			const row = new SettingsSidebarItem(
+				title,
+				glyph,
+				this.motion,
+				() => {
+					if (this.settingsSearch?.input.value) {
+						this.settingsSearch.input.value = '';
+						this.filterSettings('');
+					}
+					this.scrollSettings(offset === 0 ? 0 : offset + SettingsPanelFrame.header, i);
+				},
+				() => this.sound.play('hover')
+			);
 			row.y = 40 + i * 46;
 			this.settingsSidebar.push(row);
 			this.drawerContent.addChild(row);
@@ -812,7 +851,9 @@ export class GameClient {
 		this.settingRow(m.ui_zen_gravity(), this.settings.gravity ? m.ui_on() : m.ui_off(), 248, () =>
 			this.toggle('gravity')
 		);
-		this.settingRow(m.ui_dark_mode(), this.settings.dark ? m.ui_on() : m.ui_off(), 309, () => this.toggle('dark'));
+		this.settingRow(m.ui_dark_mode(), this.settings.dark ? m.ui_on() : m.ui_off(), 309, () =>
+			this.toggle('dark')
+		);
 		textAt(this.settingsRows, m.ui_controls(), 33, 377, 24);
 		this.sliderRow(m.ui_repeat_delay_das(), 'das', 430, 0, 500, 1, ' ms');
 		textAt(
@@ -849,36 +890,64 @@ export class GameClient {
 		textAt(this.settingsRows, m.ui_menu_and_gameplay_effects(), 34, 1101, 14, 0x65717c);
 		this.settingsScrollbar = new Graphics();
 		this.settingsScrollbar.x = w - 7;
-		this.drawerContent.addChild(this.settingsScrollbar);		const collect = (node: Container): string => node instanceof Text ? node.text : node.children.map(collect).join(' ');
-		this.searchEntries = this.settingsRows.children.map(node => ({ node, y: node.y, text: collect(node).toLowerCase() }));
-		this.searchEmpty = textAt(this.settingsRows, m.ui_no_matching_settings(), 33, 12, 16, this.theme.muted);
+		this.drawerContent.addChild(this.settingsScrollbar);
+		const collect = (node: Container): string =>
+			node instanceof Text ? node.text : node.children.map(collect).join(' ');
+		this.searchEntries = this.settingsRows.children.map((node) => ({
+			node,
+			y: node.y,
+			text: collect(node).toLowerCase()
+		}));
+		this.searchEmpty = textAt(
+			this.settingsRows,
+			m.ui_no_matching_settings(),
+			33,
+			12,
+			16,
+			this.theme.muted
+		);
 		this.filterSettings(this.settingsSearch.input.value);
-
 	}
 	private drawSettingsSurface() {
 		const w = Math.min(700, this.width - 36);
-		this.settingsFrame?.layout(w, this.height, this.settingsScroll.offset, this.themeTransition.value);
+		this.settingsFrame?.layout(
+			w,
+			this.height,
+			this.settingsScroll.offset,
+			this.themeTransition.value
+		);
 	}
 	private updateTheme() {
 		if (this.lastTheme === this.themeTransition.value) return;
 		this.lastTheme = this.themeTransition.value;
 		this.backdrop.clear().rect(0, 0, this.width, this.height).fill(this.theme.background);
-		if (this.panel === 'settings') { this.drawSettingsSurface(); this.styleDrawer(); }
-		for (const text of [this.titleText, this.linesText, this.timeText, this.piecesText]) text.style.fill = this.theme.text;
+		if (this.panel === 'settings') {
+			this.drawSettingsSurface();
+			this.styleDrawer();
+		}
+		for (const text of [this.titleText, this.linesText, this.timeText, this.piecesText])
+			text.style.fill = this.theme.text;
 		this.modeDescription.style.fill = this.theme.muted;
 		if (this.pauseControl) this.pauseControl.tint = this.theme.text;
-
-	}	private filterSettings(query: string) {
+	}
+	private filterSettings(query: string) {
 		const words = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
 		let y = 12;
 		for (const entry of this.searchEntries) {
-			entry.node.visible = words.every(word => entry.text.includes(word));
+			entry.node.visible = words.every((word) => entry.text.includes(word));
 			entry.node.y = words.length ? y : entry.y;
 			if (entry.node.visible) y += entry.node.height + 14;
 		}
 		this.settingsContentHeight = words.length ? y + 20 : 1160;
-		if (this.searchEmpty) this.searchEmpty.visible = words.length > 0 && !this.searchEntries.some(entry => entry.node.visible);
-		this.settingsScroll.max = Math.max(0, this.settingsContentHeight + SettingsPanelFrame.header - SettingsPanelFrame.viewportHeight(this.height));
+		if (this.searchEmpty)
+			this.searchEmpty.visible =
+				words.length > 0 && !this.searchEntries.some((entry) => entry.node.visible);
+		this.settingsScroll.max = Math.max(
+			0,
+			this.settingsContentHeight +
+				SettingsPanelFrame.header -
+				SettingsPanelFrame.viewportHeight(this.height)
+		);
 		this.selectedSettingsSection = null;
 		this.settingsScroll.scrollTo(0);
 		this.focus = -1;
@@ -891,7 +960,7 @@ export class GameClient {
 			.roundRect(20, 0, w - 40, 48, 4)
 			.fill({ color: this.theme.text, alpha: this.settings.dark ? 0.025 : 0.025 });
 		root.addChild(bg);
-		const caption = textAt(root, title, 34, 0, 16);
+		textAt(root, title, 34, 14, 16);
 		const v = textAt(root, value, w - 37, 14, 16, mint);
 		v.anchor.x = 1;
 		root.eventMode = 'static';
@@ -912,7 +981,11 @@ export class GameClient {
 			toggle
 				.clear()
 				.roundRect(right - width, 16, width, 16, 8)
-				.stroke({ color: this.theme.accent, width: 3.2, alpha: 0.65 + 0.35 * Math.max(0, Math.min(1, state.fill)) })
+				.stroke({
+					color: this.theme.accent,
+					width: 3.2,
+					alpha: 0.65 + 0.35 * Math.max(0, Math.min(1, state.fill))
+				})
 				.roundRect(right - width, 16, width, 16, 8)
 				.fill({ color: this.theme.accent, alpha: Math.max(0, Math.min(1, state.fill)) });
 		};
@@ -923,7 +996,12 @@ export class GameClient {
 			this.sound.play('open');
 			run();
 			on = !on;
-			this.motion.to(state, { position: on ? 1 : 0 }, on ? 200 : 120, on ? ease.outElasticQuarter : ease.outExpo);
+			this.motion.to(
+				state,
+				{ position: on ? 1 : 0 },
+				on ? 200 : 120,
+				on ? ease.outElasticQuarter : ease.outExpo
+			);
 			this.motion.to(state, { fill: on ? 1 : 0 }, 250, ease.outQuint);
 		};
 		root.on('pointertap', activate);
@@ -949,7 +1027,7 @@ export class GameClient {
 			.fill({ color: this.theme.text, alpha: this.settings.dark ? 0.025 : 0.025 });
 		const track = new Graphics();
 		root.addChild(bg, track);
-		textAt(root, title, 34, 14, 16);
+		const caption = textAt(root, title, 34, 0, 16);
 		const value = textAt(root, '', 34, 30, 13, mint);
 		value.anchor.x = 0;
 		const left = 270,
@@ -981,7 +1059,7 @@ export class GameClient {
 		const editor = new NumberEditor(this.host);
 		root.on('destroyed', () => editor.destroy());
 		const edit = () => {
-			editor.open(title, value, left - 55, this.settings[key], this.theme.accent, next => {
+			editor.open(title, value, left - 55, this.settings[key], this.theme.accent, (next) => {
 				set(next);
 				this.saveSettings();
 			});
@@ -1009,7 +1087,13 @@ export class GameClient {
 	}
 	private toggle(key: 'dark' | 'motion' | 'ghost' | 'grid' | 'gravity') {
 		this.settings[key] = !this.settings[key];
-		if (key === 'dark') this.motion.to(this.themeTransition, { value: this.settings.dark ? 1 : 0 }, 450, ease.outQuint);
+		if (key === 'dark')
+			this.motion.to(
+				this.themeTransition,
+				{ value: this.settings.dark ? 1 : 0 },
+				450,
+				ease.outQuint
+			);
 		this.saveSettings();
 	}
 	private saveSettings() {
@@ -1061,11 +1145,18 @@ export class GameClient {
 			else if (key === 'Tab' || key === 'ArrowDown' || key === 'ArrowUp') {
 				const dir = e.shiftKey || key === 'ArrowUp' ? -1 : 1;
 				const n = this.panelActions.length;
-				if (!n || !this.panelFocus.some(item => item.parent.visible)) return;
-				do { this.focus = (this.focus + dir + n) % n; } while (!this.panelFocus[this.focus].parent.visible && this.panelFocus.some(item => item.parent.visible));
+				if (!n || !this.panelFocus.some((item) => item.parent?.visible)) return;
+				do {
+					this.focus = (this.focus + dir + n) % n;
+				} while (
+					!this.panelFocus[this.focus]?.parent?.visible &&
+					this.panelFocus.some((item) => item.parent?.visible)
+				);
 				this.panelFocus.forEach((b, i) => (b.alpha = i === this.focus ? 3 : 1));
 				if (this.panel === 'settings') {
-					const y = this.panelFocus[this.focus].parent.y;
+					const parent = this.panelFocus[this.focus]?.parent;
+					if (!parent) return;
+					const y = parent.y;
 					if (
 						y < this.settingsScroll.offset ||
 						y + 48 > this.settingsScroll.offset + this.height - 124
@@ -1118,7 +1209,13 @@ export class GameClient {
 			return;
 		}
 		if (this.paused || this.finished) {
-			if (key === 'Tab' || key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight') {
+			if (
+				key === 'Tab' ||
+				key === 'ArrowUp' ||
+				key === 'ArrowDown' ||
+				key === 'ArrowLeft' ||
+				key === 'ArrowRight'
+			) {
 				const n = this.pauseButtons.length,
 					dir = e.shiftKey || key === 'ArrowUp' || key === 'ArrowLeft' ? -1 : 1;
 				this.focus = (this.focus + dir + n) % n;
@@ -1274,8 +1371,8 @@ export class GameClient {
 		this.shade.clear().rect(0, 0, this.width, this.height).fill(0x040915);
 		this.backdrop.clear().rect(0, 0, this.width, this.height).fill(this.theme.background);
 
-
-		for (const text of [this.titleText, this.linesText, this.timeText, this.piecesText]) text.style.fill = this.theme.text;
+		for (const text of [this.titleText, this.linesText, this.timeText, this.piecesText])
+			text.style.fill = this.theme.text;
 		this.modeDescription.style.fill = this.theme.muted;
 		if (this.pauseControl) this.pauseControl.tint = this.theme.text;
 		if (this.panel) this.buildDrawer();
@@ -1295,17 +1392,29 @@ export class GameClient {
 			this.settingsRows.y = -Math.max(0, offset - SettingsPanelFrame.header);
 			const contentY = SettingsPanelFrame.contentY(offset);
 			if (this.settingsViewport) this.settingsViewport.y = contentY;
-			this.settingsMask?.clear().rect(170, contentY, Math.min(700, this.width - 36) - 170, this.height - contentY).fill(0xffffff);
+			this.settingsMask
+				?.clear()
+				.rect(170, contentY, Math.min(700, this.width - 36) - 170, this.height - contentY)
+				.fill(0xffffff);
 			this.drawSettingsSurface();
 			const section =
-				this.selectedSettingsSection ?? (offset >= this.settingsScroll.max - 1 && offset > 0 ? 2 : offset >= 465 ? 1 : 0);
-			this.settingsSidebar.forEach((item, index) => item.update(index === section, this.themeTransition.value));
+				this.selectedSettingsSection ??
+				(offset >= this.settingsScroll.max - 1 && offset > 0 ? 2 : offset >= 465 ? 1 : 0);
+			this.settingsSidebar.forEach((item, index) =>
+				item.update(index === section, this.themeTransition.value)
+			);
 			const height = this.height - contentY;
 			const thumb = height * Math.min(1, height / this.settingsContentHeight);
 			this.settingsScrollbar.clear();
 			if (this.settingsScroll.max > 0)
 				this.settingsScrollbar
-					.roundRect(0, contentY + ((height - thumb) * offset) / this.settingsScroll.max, 3, thumb, 1.5)
+					.roundRect(
+						0,
+						contentY + ((height - thumb) * offset) / this.settingsScroll.max,
+						3,
+						thumb,
+						1.5
+					)
 					.fill({ color: this.theme.accent, alpha: 0.45 });
 		}
 		this.sound.volume = this.settings.volume;
@@ -1342,7 +1451,15 @@ export class GameClient {
 				y += heights[i];
 			});
 		}
-		this.imageBackground.update(w, h, this.pointer, dt, this.screenShift, this.motion.reduced, this.screen === 'menu');
+		this.imageBackground.update(
+			w,
+			h,
+			this.pointer,
+			dt,
+			this.screenShift,
+			this.motion.reduced,
+			this.screen === 'menu'
+		);
 		this.toolbar.alpha = v.toolbarAlpha;
 		for (const child of this.toolbar.children.slice(1)) child.tint = 0xffffff;
 		this.toolbar.y = -40 * (1 - v.toolbar);
@@ -1351,7 +1468,10 @@ export class GameClient {
 		this.bottom.alpha = v.bottom;
 		const gameScale = Math.min((w - 48) / 650, (h - 32) / 650);
 		this.gameView.scale.set(gameScale);
-		this.gameView.position.set(w / 2 + v.gameX + this.screenShift, h / 2 - 16 * gameScale + v.drop * 3 * motion);
+		this.gameView.position.set(
+			w / 2 + v.gameX + this.screenShift,
+			h / 2 - 16 * gameScale + v.drop * 3 * motion
+		);
 		this.gameView.alpha = v.gameAlpha;
 		this.gameView.visible = v.gameAlpha > 0.001;
 		this.gameView.eventMode =
@@ -1365,10 +1485,19 @@ export class GameClient {
 		this.drawerShade.alpha = v.drawer;
 		this.drawerContent.x = -740 * (1 - v.drawer);
 		const bounds = this.host.getBoundingClientRect();
-		this.settingsSearch?.layout(bounds.left + (this.drawerContent.x + 190) * this.stage.scale.x, bounds.top + (SettingsPanelFrame.searchY(this.settingsScroll.offset) + 6) * this.stage.scale.y, (Math.min(700, w - 36) - 260) * this.stage.scale.x, this.stage.scale.y, this.theme.text, this.panel === 'settings');
+		this.settingsSearch?.layout(
+			bounds.left + (this.drawerContent.x + 190) * this.stage.scale.x,
+			bounds.top +
+				(SettingsPanelFrame.searchY(this.settingsScroll.offset) + 6) * this.stage.scale.y,
+			(Math.min(700, w - 36) - 260) * this.stage.scale.x,
+			this.stage.scale.y,
+			this.theme.text,
+			this.panel === 'settings'
+		);
 		this.drawer.eventMode = this.panel ? 'auto' : 'none';
 		this.dropGlow.clear();
-		if (v.drop > 0.01) this.dropGlow.rect(-130, 294, 260, 4).fill({ color: menuColors.solo, alpha: v.drop });
+		if (v.drop > 0.01)
+			this.dropGlow.rect(-130, 294, 260, 4).fill({ color: menuColors.solo, alpha: v.drop });
 		if (this.screen === 'game' && !this.paused && !this.panel && !this.finished) {
 			this.time += elapsed;
 			for (const [key, held] of this.held) {
@@ -1376,10 +1505,19 @@ export class GameClient {
 				let moved = false;
 				// Stop at collision, including instant ARR; never loop unbounded on zero.
 				for (let i = 0; i < count; i++) {
-					if (!this.game.move(key === 'ArrowLeft' ? -1 : key === 'ArrowRight' ? 1 : 0, key === 'ArrowDown' ? 1 : 0)) break;
+					if (
+						!this.game.move(
+							key === 'ArrowLeft' ? -1 : key === 'ArrowRight' ? 1 : 0,
+							key === 'ArrowDown' ? 1 : 0
+						)
+					)
+						break;
 					moved = true;
 				}
-				if (moved) { this.dirty = true; this.sound.play('move'); }
+				if (moved) {
+					this.dirty = true;
+					this.sound.play('move');
+				}
 			}
 			if (this.mode === 'sprint' || this.settings.gravity) {
 				this.gravity += dt;
