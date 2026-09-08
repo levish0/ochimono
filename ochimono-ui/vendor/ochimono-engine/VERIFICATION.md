@@ -38,18 +38,32 @@ also states that soft drop works at zero gravity. These sources do not specify
 the current numeric conversion. No multiplier or zero-gravity constant has
 been inferred from them.
 
+## Live measurements
+
+Two 10-second Custom games were measured on 2026-09-09 using the live client's
+paused replay viewer. At 0G, one Down tap with SDF 6 moved O down one row and
+scored 1 point. With 0.02G and no input, O occupied rows -3/-2 at displayed
+frame 0, -2/-1 at frame 1 and frame 50, and -1/0 at frame 51. This reveals an
+initial-position/first-descent difference from the current engine, but does not
+establish the full spawn policy for other pieces or modes.
+
+See the [measurement procedure and six captures](https://github.com/levish0/ochimono/blob/main/ochimono-engine/docs/measurements/README.md).
+Account handling was retained and modified Custom settings were restored.
+The browser API cannot hold a key for a controlled duration, and the export
+control did not produce an observable replay download. Sustained SDF/DAS/ARR
+timings remain unmeasured; a tap must not be presented as a repeat-rate test.
+
 ## Live measurements still required
 
 - Finite SDF at several factors and gravity values, including zero gravity.
-- Exact spawn position and first gravity step, per piece and mode.
+- Extend the O-only Custom spawn/first-descent observations to every piece and mode.
 - Clutch Clear recovery distance, limits and ordering relative to IRS/IHS.
 - Safe-lock duration and exact expiry boundary.
 - DCD during uncharged DAS, failed rotation and repeated rotations.
 - Multiple simultaneous IRS keys and exact-deadline input ordering.
 - Mode-specific lock-out and lock-reset boundaries.
 
-The available signed-in browser reported an active Tetra League match, so game
-interaction was stopped and the temporary tab was closed. A separate headless
-session was rejected by the site before gameplay. No user-agent workaround was
-attempted. No timed live measurements were obtained in this verification pass.
-Account handling settings were not changed.
+An earlier verification pass stopped because the signed-in browser reported an
+active Tetra League match. The subsequent authorized Custom measurements above
+supersede that earlier lack of live evidence. A separate headless session was
+rejected before gameplay; no user-agent workaround was attempted.
