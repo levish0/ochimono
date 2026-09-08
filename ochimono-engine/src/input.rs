@@ -30,4 +30,8 @@ pub struct InputState {
     pub repeat_at: Option<u64>,
     pub soft_drop_at: Option<u64>,
     pub charged: bool,
+    pub rotations: [bool; 3],
+    pub hold: bool,
+    pub buffered_rotation: u8,
+    pub buffered_hold: bool,
 }

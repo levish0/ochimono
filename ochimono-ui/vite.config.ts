@@ -8,6 +8,8 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import wasm from 'vite-plugin-wasm';
 
 export default defineConfig({
+	// The local WASM package is rebuilt in place; do not cache its previous binary.
+	optimizeDeps: { exclude: ['ochimono-engine'] },
 	plugins: [
 		wasm(),
 		tailwindcss(),

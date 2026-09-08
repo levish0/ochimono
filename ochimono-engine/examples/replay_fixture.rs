@@ -6,6 +6,8 @@ fn main() {
         arr: 1_800,
         dcd: 0,
         soft_drop_interval: 1_500,
+        cancel_das_on_direction_change: true,
+        ..Handling::default()
     };
     let mut game = Game::new(42, Rules::solo(Mode::Sprint, true), handling.clone()).unwrap();
     let inputs = [

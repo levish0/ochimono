@@ -11,17 +11,21 @@ pub struct WasmGame(Game);
 #[wasm_bindgen(js_class = Game)]
 impl WasmGame {
     #[wasm_bindgen(constructor)]
-    pub fn new(seed: &str, mode: &str, gravity: bool, handling: &str) -> Result<WasmGame, JsValue> {
+    pub fn new(
+        seed: &str,
+        mode: &str,
+        gravity: bool,
+        handling: &str,
+        entry_delay: u32,
+    ) -> Result<WasmGame, JsValue> {
         let mode: Mode =
             serde_json::from_value(serde_json::Value::String(mode.into())).map_err(error)?;
         let handling: Handling = serde_json::from_str(handling).map_err(error)?;
-        Game::new(
-            seed.parse().map_err(error)?,
-            Rules::solo(mode, gravity),
-            handling,
-        )
-        .map(Self)
-        .map_err(error)
+        let mut rules = Rules::solo(mode, gravity);
+        rules.entry_delay = entry_delay as u64;
+        Game::new(seed.parse().map_err(error)?, rules, handling)
+            .map(Self)
+            .map_err(error)
     }
 
     pub fn input(&mut self, input: &str) -> Result<(), JsValue> {
@@ -51,13 +55,17 @@ impl WasmGame {
         Ok(())
     }
 
-    pub fn configure(&mut self, gravity: bool, handling: &str) -> Result<(), JsValue> {
+    pub fn configure(
+        &mut self,
+        gravity: bool,
+        handling: &str,
+        entry_delay: u32,
+    ) -> Result<(), JsValue> {
         let mode = self.0.snapshot().rules.mode;
+        let mut rules = Rules::solo(mode, gravity);
+        rules.entry_delay = entry_delay as u64;
         self.0
-            .configure(
-                Rules::solo(mode, gravity),
-                serde_json::from_str(handling).map_err(error)?,
-            )
+            .configure(rules, serde_json::from_str(handling).map_err(error)?)
             .map_err(error)
     }
 

@@ -3,6 +3,41 @@ import { PracticeGame, type GameAction } from './engine';
 import fixture from './fixtures/replay.json';
 
 describe('shared WASM game engine', () => {
+	it('applies handling settings through WASM and consumes buffered rotation at spawn', () => {
+		const game = new PracticeGame('zen', {
+			entryDelay: 100,
+			irs: 'tap',
+			ihs: 'tap',
+			dcd: 3.5,
+			safeLockDelay: 50,
+			sonicDrop: true,
+			cancelDas: false,
+			preferSoftDrop: true
+		});
+		try {
+			expect(JSON.parse(game.snapshot()).handling).toMatchObject({
+				dcd: 210,
+				safe_lock_delay: 3000,
+				soft_drop_interval: 0,
+				cancel_das_on_direction_change: false,
+				prefer_soft_drop: true
+			});
+			game.input('hard_drop');
+			expect(game.state.active).toBe(false);
+			const next = game.state.queue[0];
+			game.advance(1000);
+			game.input('hold');
+			game.input('hold', false);
+			game.input('half_turn');
+			game.input('half_turn', false);
+			game.advance(6000);
+			expect(game.state.active).toBe(true);
+			expect(game.state.hold).toBe(next);
+			expect(JSON.parse(game.snapshot()).rotation).toBe(2);
+		} finally {
+			game.destroy();
+		}
+	});
 	it('matches native snapshots after every replay input', () => {
 		const game = new PracticeGame('sprint', { das: 140, arr: 30, gravity: true }, fixture.seed);
 		try {

@@ -7,6 +7,8 @@ fn handling() -> Handling {
         arr: 1_000,
         dcd: 0,
         soft_drop_interval: 0,
+        cancel_das_on_direction_change: true,
+        ..Handling::default()
     }
 }
 

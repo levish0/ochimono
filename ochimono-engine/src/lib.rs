@@ -10,5 +10,5 @@ mod wasm;
 
 pub use game::Game;
 pub use input::{Action, Input};
-pub use rules::{Handling, Mode, Rules, TICKS_PER_SECOND};
+pub use rules::{BufferMode, Handling, Mode, Rules, TICKS_PER_SECOND};
 pub use state::{Snapshot, View};

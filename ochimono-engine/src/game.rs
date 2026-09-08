@@ -1,7 +1,7 @@
 use crate::{
     input::{Action, Input, InputState},
     piece::{Piece, kicks},
-    rules::{Handling, Mode, Rules, TICKS_PER_SECOND},
+    rules::{BufferMode, Handling, Mode, Rules, TICKS_PER_SECOND},
     state::{HEIGHT, HIDDEN, Snapshot, View, WIDTH},
 };
 use rand_chacha::ChaCha8Rng;
@@ -19,7 +19,7 @@ impl Game {
         rules.validate()?;
         handling.validate()?;
         let state = Snapshot {
-            format_version: 1,
+            format_version: 2,
             rules,
             handling,
             rng: ChaCha8Rng::seed_from_u64(seed),
@@ -38,6 +38,8 @@ impl Game {
             time: 0,
             gravity_at: None,
             lock_at: None,
+            spawn_at: None,
+            hard_drop_after: 0,
             lock_resets: 0,
             lowest_y: -2,
             last_kick: None,
@@ -61,7 +63,7 @@ impl Game {
     pub fn from_snapshot(state: Snapshot) -> Result<Self, String> {
         state.rules.validate()?;
         state.handling.validate()?;
-        if state.format_version != 1
+        if state.format_version != 2
             || state.board.len() != HEIGHT
             || !(7..=14).contains(&state.queue.len())
             || state.rotation > 3
@@ -74,6 +76,9 @@ impl Game {
             || !(-HIDDEN..20).contains(&state.lowest_y)
             || state.last_kick.is_some_and(|index| index >= 6)
             || !(-1..=1).contains(&state.input.direction)
+            || state.input.buffered_rotation > 3
+            || state.hard_drop_after > state.time + TICKS_PER_SECOND
+            || (state.spawn_at.is_some() && (state.gravity_at.is_some() || state.lock_at.is_some()))
             || (state.gravity_at.is_some() && state.rules.gravity_interval == 0)
             || (state.input.soft_drop_at.is_some()
                 && (!state.input.soft_drop || state.handling.soft_drop_interval == 0))
@@ -84,6 +89,7 @@ impl Game {
             || [
                 state.gravity_at,
                 state.lock_at,
+                state.spawn_at,
                 state.input.repeat_at,
                 state.input.soft_drop_at,
             ]
@@ -101,6 +107,7 @@ impl Game {
         };
         if !game.state.over
             && !game.state.complete
+            && game.state.spawn_at.is_none()
             && !game.fits(game.state.x, game.state.y, game.state.rotation)
         {
             return Err("Active piece overlaps board".into());
@@ -115,6 +122,7 @@ impl Game {
             matrix[y as usize][x as usize] = 1;
         }
         View {
+            active: s.spawn_at.is_none(),
             board: s.board.clone(),
             board_top: -HIDDEN,
             queue: s.queue.clone(),
@@ -162,6 +170,7 @@ impl Game {
     }
 
     fn spawn(&mut self, held: Option<Piece>) {
+        self.state.spawn_at = None;
         self.replenish();
         self.state.piece = held.unwrap_or_else(|| self.state.queue.remove(0));
         self.replenish();
@@ -177,6 +186,40 @@ impl Game {
         self.state.over = !self.fits(self.state.x, self.state.y, self.state.rotation);
         self.cut_das();
         self.grounded(false);
+    }
+
+    fn spawn_buffered(&mut self) {
+        self.spawn(None);
+        let hold = match self.state.handling.ihs {
+            BufferMode::Off => false,
+            BufferMode::Hold => self.state.input.hold,
+            BufferMode::Tap => self.state.input.buffered_hold,
+        };
+        if hold {
+            let previous = self.state.hold.replace(self.state.piece);
+            self.spawn(previous);
+            self.state.held = true;
+        }
+        let rotation = match self.state.handling.irs {
+            BufferMode::Off => 0,
+            BufferMode::Hold => {
+                self.state
+                    .input
+                    .rotations
+                    .iter()
+                    .zip([1, 3, 2])
+                    .filter_map(|(held, amount)| held.then_some(amount))
+                    .sum::<u8>()
+                    % 4
+            }
+            BufferMode::Tap => self.state.input.buffered_rotation,
+        };
+        self.state.input.buffered_rotation = 0;
+        self.state.input.buffered_hold = false;
+        if rotation != 0 && !self.state.over {
+            self.rotate(rotation);
+        }
+        self.checkpoint = self.state.clone();
     }
 
     pub fn ghost_y(&self) -> i32 {
@@ -195,7 +238,11 @@ impl Game {
             self.state.lock_resets = 0;
             self.state.lock_at = None;
         }
-        if !self.state.rules.automatic_lock || self.state.over || self.state.complete {
+        if !self.state.rules.automatic_lock
+            || self.state.over
+            || self.state.complete
+            || self.state.spawn_at.is_some()
+        {
             self.state.lock_at = None;
             return;
         }
@@ -211,13 +258,14 @@ impl Game {
             self.state.lock_at = Some(self.state.time + self.state.rules.lock_delay);
         }
         if self.state.lock_resets >= self.state.rules.lock_reset_limit {
-            self.lock();
+            self.lock(true);
         }
     }
 
     fn move_piece(&mut self, dx: i32, dy: i32) -> bool {
         if self.state.over
             || self.state.complete
+            || self.state.spawn_at.is_some()
             || !self.fits(self.state.x + dx, self.state.y + dy, self.state.rotation)
         {
             return false;
@@ -262,7 +310,7 @@ impl Game {
         }
     }
 
-    fn lock(&mut self) {
+    fn lock(&mut self, automatic: bool) {
         if self.state.over || self.state.complete {
             return;
         }
@@ -287,17 +335,30 @@ impl Game {
         self.state.lines += cleared as u32;
         self.state.placed += 1;
         self.state.held = false;
+        if automatic {
+            self.state.hard_drop_after = self.state.time + self.state.handling.safe_lock_delay;
+        }
         if self.state.rules.mode == Mode::Sprint && self.state.lines >= 40 {
             self.state.complete = true;
             self.state.lock_at = None;
+        } else if self.state.rules.entry_delay > 0 {
+            self.state.spawn_at = Some(self.state.time + self.state.rules.entry_delay);
+            self.state.gravity_at = None;
+            self.state.lock_at = None;
         } else {
-            self.spawn(None);
+            self.spawn_buffered();
         }
         self.checkpoint = self.state.clone();
     }
 
     fn instant_movement(&mut self) {
+        if self.state.spawn_at.is_some() || self.state.over || self.state.complete {
+            return;
+        }
         let placed = self.state.placed;
+        if self.state.handling.prefer_soft_drop {
+            self.sonic_drop();
+        }
         if self.state.input.direction != 0
             && self.state.input.charged
             && self.state.handling.arr == 0
@@ -305,9 +366,17 @@ impl Game {
         {
             while placed == self.state.placed && self.move_piece(self.state.input.direction, 0) {}
         }
-        if self.state.input.soft_drop
+        if placed == self.state.placed {
+            self.sonic_drop();
+        }
+    }
+
+    fn sonic_drop(&mut self) {
+        if self.state.spawn_at.is_none()
+            && !self.state.over
+            && !self.state.complete
+            && self.state.input.soft_drop
             && self.state.handling.soft_drop_interval == 0
-            && placed == self.state.placed
         {
             self.state.y = self.ghost_y();
             self.grounded(false);
@@ -321,6 +390,31 @@ impl Game {
         }
         if input.pressed {
             self.future.clear();
+        }
+        let rotation = match input.action {
+            Action::Clockwise => Some((0, 1)),
+            Action::Counterclockwise => Some((1, 3)),
+            Action::HalfTurn => Some((2, 2)),
+            _ => None,
+        };
+        if let Some((index, amount)) = rotation {
+            self.state.input.rotations[index] = input.pressed;
+            if self.state.spawn_at.is_some()
+                && input.pressed
+                && self.state.handling.irs == BufferMode::Tap
+            {
+                self.state.input.buffered_rotation =
+                    (self.state.input.buffered_rotation + amount) % 4;
+            }
+        }
+        if input.action == Action::Hold {
+            self.state.input.hold = input.pressed;
+            if self.state.spawn_at.is_some()
+                && input.pressed
+                && self.state.handling.ihs == BufferMode::Tap
+            {
+                self.state.input.buffered_hold = true;
+            }
         }
         match input.action {
             Action::Left | Action::Right => {
@@ -344,9 +438,16 @@ impl Game {
                     } else {
                         0
                     };
-                    self.state.input.charged = false;
-                    self.state.input.repeat_at = (self.state.input.direction != 0)
-                        .then_some(self.state.time + self.state.handling.das);
+                    if self.state.input.direction == 0 {
+                        self.state.input.charged = false;
+                        self.state.input.repeat_at = None;
+                    } else if self.state.handling.cancel_das_on_direction_change
+                        || (!self.state.input.charged && self.state.input.repeat_at.is_none())
+                    {
+                        self.state.input.charged = false;
+                        self.state.input.repeat_at =
+                            Some(self.state.time + self.state.handling.das);
+                    }
                     if input.pressed {
                         self.move_piece(dir, 0);
                     }
@@ -365,6 +466,7 @@ impl Game {
                 }
             }
             _ if !input.pressed => {}
+            _ if self.state.spawn_at.is_some() => {}
             Action::Clockwise => self.rotate(1),
             Action::Counterclockwise => self.rotate(3),
             Action::HalfTurn => self.rotate(2),
@@ -375,8 +477,10 @@ impl Game {
             }
             Action::Hold => {}
             Action::HardDrop => {
-                self.state.y = self.ghost_y();
-                self.lock();
+                if self.state.time >= self.state.hard_drop_after {
+                    self.state.y = self.ghost_y();
+                    self.lock(false);
+                }
             }
         }
         self.instant_movement();
@@ -397,6 +501,7 @@ impl Game {
                 self.state.input.soft_drop_at,
                 self.state.gravity_at,
                 self.state.lock_at,
+                self.state.spawn_at,
             ]
             .into_iter()
             .flatten()
@@ -405,6 +510,16 @@ impl Game {
                 break;
             };
             self.state.time = next;
+            if self.state.spawn_at == Some(next) {
+                self.spawn_buffered();
+            }
+            if self.state.handling.prefer_soft_drop && self.state.input.soft_drop_at == Some(next) {
+                self.state.input.soft_drop_at = Some(next + self.state.handling.soft_drop_interval);
+                self.move_piece(0, 1);
+            }
+            if self.state.handling.prefer_soft_drop {
+                self.instant_movement();
+            }
             if self.state.input.repeat_at == Some(next) {
                 self.state.input.charged = true;
                 self.state.input.repeat_at =
@@ -423,7 +538,7 @@ impl Game {
             }
             self.instant_movement();
             if self.state.lock_at == Some(next) {
-                self.lock();
+                self.lock(true);
             }
         }
         if !self.state.over && !self.state.complete {
@@ -445,8 +560,9 @@ impl Game {
         self.state.handling = handling;
         if rules != self.state.rules {
             self.state.rules = rules;
-            self.state.gravity_at = (self.state.rules.gravity_interval > 0)
-                .then_some(self.state.time + self.state.rules.gravity_interval);
+            self.state.gravity_at = (self.state.rules.gravity_interval > 0
+                && self.state.spawn_at.is_none())
+            .then_some(self.state.time + self.state.rules.gravity_interval);
             self.state.lock_at = None;
         }
         self.release_inputs();

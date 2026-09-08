@@ -2,6 +2,33 @@ import { expect, test } from '@playwright/test';
 
 test.use({ locale: 'en-US' });
 
+test('adjusts and persists advanced handling from the settings panel', async ({ page }) => {
+	await page.goto('/');
+	await expect(page.getByRole('status')).toHaveCount(0);
+	await page.getByRole('application').focus();
+	await page.keyboard.press('Enter');
+	await page.keyboard.press('s');
+	for (let i = 0; i < 8; i++) await page.keyboard.press('Tab');
+	await page.keyboard.press('ArrowRight');
+	await page.keyboard.press('Tab');
+	await page.keyboard.press('Tab');
+	await page.keyboard.press('Enter');
+	for (let i = 0; i < 4; i++) await page.keyboard.press('Tab');
+	await page.keyboard.press('Enter');
+	await page.keyboard.press('Tab');
+	await page.keyboard.press('Enter');
+	const stored = await page.evaluate(() =>
+		JSON.parse(localStorage.getItem('ochimono.settings.v1') ?? '{}')
+	);
+	expect(stored).toMatchObject({ dcd: 0.1, sonicDrop: true, irs: 'hold', ihs: 'hold' });
+	await page.screenshot({ path: 'test-results/advanced-handling.png' });
+	await page.reload();
+	await expect(page.getByRole('status')).toHaveCount(0);
+	expect(
+		await page.evaluate(() => JSON.parse(localStorage.getItem('ochimono.settings.v1') ?? '{}'))
+	).toEqual(stored);
+});
+
 test('loads WASM and plays, undoes, pauses and saves a Zen session', async ({ page }) => {
 	const errors: string[] = [];
 	page.on('pageerror', (error) => errors.push(error.message));

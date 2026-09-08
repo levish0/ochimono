@@ -1,5 +1,5 @@
 import { Game as WasmGame } from 'ochimono-engine';
-import type { Settings } from '../game-client/settings';
+import { defaults, type Settings } from '../game-client/settings';
 
 export type Piece = 'I' | 'O' | 'T' | 'S' | 'Z' | 'J' | 'L';
 export const shapes: Record<Piece, number[][]> = {
@@ -59,6 +59,7 @@ export type GameAction =
 	| 'hold'
 	| 'hard_drop';
 export interface State {
+	active: boolean;
 	board: (Piece | null)[][];
 	board_top: number;
 	queue: Piece[];
@@ -76,24 +77,38 @@ export interface State {
 	ghost_y: number;
 }
 
-const handling = (settings: Pick<Settings, 'das' | 'arr'>) =>
+const handling = (settings: Settings) =>
 	JSON.stringify({
-		das: settings.das * 60,
-		arr: settings.arr * 60,
-		dcd: 0,
-		soft_drop_interval: 25 * 60
+		das: Math.round(settings.das * 60),
+		arr: Math.round(settings.arr * 60),
+		dcd: Math.round(settings.dcd * 60),
+		soft_drop_interval: settings.sonicDrop ? 0 : Math.round(settings.softDropInterval * 60),
+		safe_lock_delay: Math.round(settings.safeLockDelay * 60),
+		cancel_das_on_direction_change: settings.cancelDas,
+		prefer_soft_drop: settings.preferSoftDrop,
+		irs: settings.irs,
+		ihs: settings.ihs
 	});
 
 /** Browser ownership and serialization only; all rules execute in Rust. */
 export class PracticeGame {
 	private engine: WasmGame;
+	private mode: 'zen' | 'sprint';
 	state: State;
 	constructor(
 		mode: 'zen' | 'sprint' = 'zen',
-		settings = { das: 140, arr: 30, gravity: false },
+		settings: Partial<Settings> = {},
 		seed = String(crypto.getRandomValues(new Uint32Array(1))[0])
 	) {
-		this.engine = new WasmGame(seed, mode, settings.gravity, handling(settings));
+		this.mode = mode;
+		const config = { ...defaults, ...settings };
+		this.engine = new WasmGame(
+			seed,
+			mode,
+			config.gravity,
+			handling(config),
+			mode === 'zen' ? Math.round(config.entryDelay * 60) : 0
+		);
 		this.state = JSON.parse(this.engine.view());
 	}
 	private refresh() {
@@ -107,8 +122,12 @@ export class PracticeGame {
 		this.engine.advance(ticks);
 		this.refresh();
 	}
-	configure(settings: Pick<Settings, 'das' | 'arr' | 'gravity'>) {
-		this.engine.configure(settings.gravity, handling(settings));
+	configure(settings: Settings) {
+		this.engine.configure(
+			settings.gravity,
+			handling(settings),
+			this.mode === 'zen' ? Math.round(settings.entryDelay * 60) : 0
+		);
 		this.refresh();
 	}
 	ghostY() {

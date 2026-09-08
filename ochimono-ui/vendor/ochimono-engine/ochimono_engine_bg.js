@@ -21,11 +21,12 @@ export class Game {
     /**
      * @param {boolean} gravity
      * @param {string} handling
+     * @param {number} entry_delay
      */
-    configure(gravity, handling) {
+    configure(gravity, handling, entry_delay) {
         const ptr0 = passStringToWasm0(handling, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.game_configure(this.__wbg_ptr, gravity, ptr0, len0);
+        const ret = wasm.game_configure(this.__wbg_ptr, gravity, ptr0, len0, entry_delay);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
         }
@@ -46,15 +47,16 @@ export class Game {
      * @param {string} mode
      * @param {boolean} gravity
      * @param {string} handling
+     * @param {number} entry_delay
      */
-    constructor(seed, mode, gravity, handling) {
+    constructor(seed, mode, gravity, handling, entry_delay) {
         const ptr0 = passStringToWasm0(seed, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ptr1 = passStringToWasm0(mode, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len1 = WASM_VECTOR_LEN;
         const ptr2 = passStringToWasm0(handling, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len2 = WASM_VECTOR_LEN;
-        const ret = wasm.game_new(ptr0, len0, ptr1, len1, gravity, ptr2, len2);
+        const ret = wasm.game_new(ptr0, len0, ptr1, len1, gravity, ptr2, len2, entry_delay);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }

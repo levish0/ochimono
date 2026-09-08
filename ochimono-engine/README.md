@@ -31,8 +31,9 @@ together with it; changing expected output alone is not a compatibility check.
 
 ## Rules and reproducibility
 
-`Rules` holds gravity and lock policy; `Handling` holds DAS, ARR, DCD and an
-explicit soft-drop interval. Time uses integer ticks: 60 ticks per millisecond,
+`Rules` holds gravity, lock policy and entry delay; `Handling` holds DAS, ARR,
+DCD, soft-drop priority, direction-change policy, hard-drop guard and IRS/IHS.
+Soft drop accepts an explicit interval or sonic drop. Time uses integer ticks: 60 ticks per millisecond,
 1,000 per 60 Hz frame. Inputs carry simulation timestamps. Timers at a timestamp
 run before inputs at that timestamp, independent of render cadence.
 
@@ -41,10 +42,10 @@ Restoring a snapshot resumes the same sequence. Undo/redo history is local to a
 `Game` instance and is not included in an exported snapshot. Seeds and bag order
 are Ochimono's replay format, not TETR.IO replay compatibility.
 
-`solo-v1` is an initial practice ruleset, **not a claim of current TETR.IO parity**.
+`solo-v2` is a practice ruleset, **not a claim of current TETR.IO parity**.
 Its 0.02 G gravity, 30-frame lock delay and 15-reset limit come from historical
-benchmark material. Current spawn/lock-reset boundaries, finite SDF scaling, IRS,
-IHS, safe-lock, Zen recovery and scoring still require reference fixtures before
+benchmark material. Current spawn/lock-reset boundaries, finite SDF scaling,
+exact safe-lock duration, Zen recovery and scoring still require reference fixtures before
 being advertised as equivalent. Soft drop uses an explicit interval so an unknown
 SDF formula is not silently substituted. Sprint fixes its rules for a run.
 Pieces start entirely above the visible frame. Ochimono represents this with
@@ -59,6 +60,49 @@ Above-frame placement is distinct from block-out at the next spawn; see
 [the report and osk's confirmation](https://github.com/tetrio/issues/issues/1125#issuecomment-1518452284).
 The precise initial spawn check before any immediate one-row descent, and current
 mode-specific top-out policies, still require further fixtures.
+
+## Handling controls
+
+The [live CONFIG page](https://tetr.io/) was checked on 2026-09-09, including its
+public control labels, input ranges and buffering tooltips. The
+[mechanics FAQ](https://tetrio.github.io/faq/mechanics.html) explains DAS, ARR,
+DCD and sonic drop; [the original DCD discussion](https://github.com/tetrio/issues/issues/380)
+records the author's intent. These references establish behavior categories,
+not frame-exact compatibility with every current mode.
+
+| Setting | Engine and UI behavior |
+| --- | --- |
+| DAS / ARR | Fractional millisecond input; ARR zero moves to the wall after DAS charges. |
+| DCD | Delays horizontal repeat after successful rotation or spawn. |
+| Cancel DAS | Enabled: restart charge when changing direction. Disabled: retain the active charge/deadline while switching direction. Releasing both directions always clears it. |
+| Soft drop | Explicit milliseconds per cell, including zero-gravity play; a separate sonic toggle drops instantly without locking. |
+| Prefer soft drop | Resolve held sonic drop before horizontal repeats; resolve simultaneous finite soft-drop timers before horizontal timers. |
+| Hard-drop guard | Configurable duration after automatic locking, including reset-limit locking. Zero disables the guard. Manual hard drops do not start it. |
+| IRS OFF / HOLD / TAP | Ignore buffered rotation / use rotations still held at spawn / accumulate rotations entered during entry delay modulo four. |
+| IHS OFF / HOLD / TAP | Ignore buffered hold / hold when the key remains down at spawn / remember a hold press during entry delay. |
+| Zen entry delay | Optional gap between pieces in which TAP buffering can be exercised; Sprint retains its fixed zero-delay rules. |
+| Rotation keys | Clockwise, counterclockwise and 180 degrees; multiple physical keys for one action release it only when the last key is released. |
+
+IHS runs before IRS. With multiple held rotation actions, their quarter turns are
+summed modulo four. TAP consumes its buffer once at spawn; pause, focus loss and
+handling changes clear held keys and buffers. Delayed snapshots preserve the
+spawn deadline and pending inputs. These ordering choices are explicit Ochimono
+policies pending live boundary fixtures. Snapshot format is now version 2;
+version 1 is rejected instead of silently changing an existing replay's meaning.
+
+Observed reference slider ranges are ARR 0–5 F, DAS 1–20 F and DCD 0–20 F,
+all in 0.1 F steps; SDF's input spans 5–41, with its final setting representing
+infinity. UI milliseconds are not rounded to whole frames in this engine.
+The reference's finite SDF conversion, especially its zero-gravity baseline,
+is still unverified: **the interval control is not labeled SDF**. A historical
+[author explanation](https://github.com/tetrio/issues/issues/182) establishes
+gravity dependence, while the current FAQ states that zero-gravity soft drop
+still works. Neither establishes the precise current formula.
+
+`tests/handling.rs` covers configurable behavior, boundary timestamps, buffering
+through snapshot restoration, guard expiry and movement/drop ordering. Native
+and WASM replay comparisons establish cross-target determinism, not a comparison
+against a TETR.IO replay.
 
 ## Rotation references
 

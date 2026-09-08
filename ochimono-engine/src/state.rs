@@ -33,6 +33,8 @@ pub struct Snapshot {
     pub time: u64,
     pub gravity_at: Option<u64>,
     pub lock_at: Option<u64>,
+    pub spawn_at: Option<u64>,
+    pub hard_drop_after: u64,
     pub lock_resets: u8,
     pub lowest_y: i32,
     pub last_kick: Option<usize>,
@@ -41,6 +43,7 @@ pub struct Snapshot {
 
 #[derive(Serialize)]
 pub struct View {
+    pub active: bool,
     pub board: Board,
     /// Y coordinate of the first board row, including the upper buffer.
     pub board_top: i32,

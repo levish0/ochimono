@@ -101,5 +101,16 @@
 	"ui_quick_match_and_rooms": "Quick match and rooms",
 	"ui_dark_mode": "Dark mode",
 	"ui_search_settings": "Type to search",
-	"ui_no_matching_settings": "No matching settings"
+	"ui_no_matching_settings": "No matching settings",
+	"ui_das_cut_delay": "DAS cut delay (DCD)",
+	"ui_soft_drop_interval": "Soft drop interval",
+	"ui_sonic_drop": "Instant soft drop (∞)",
+	"ui_safe_lock_delay": "Hard drop guard (0 = off)",
+	"ui_cancel_das": "Cancel DAS on direction change",
+	"ui_prefer_soft_drop": "Prefer soft drop over movement",
+	"ui_rotation_buffering": "Rotation buffering (IRS)",
+	"ui_hold_buffering": "Hold buffering (IHS)",
+	"ui_zen_entry_delay": "Zen entry delay",
+	"ui_buffering_description": "HOLD: held at spawn · TAP: pressed between pieces",
+	"ui_rotate_180": "Rotate 180°"
 }

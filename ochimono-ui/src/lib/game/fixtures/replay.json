@@ -484,22 +484,36 @@
         ]
       ],
       "complete": false,
-      "format_version": 1,
+      "format_version": 2,
       "gravity_at": 50000,
       "handling": {
         "arr": 1800,
+        "cancel_das_on_direction_change": true,
         "das": 8400,
         "dcd": 0,
+        "ihs": "off",
+        "irs": "off",
+        "prefer_soft_drop": false,
+        "safe_lock_delay": 0,
         "soft_drop_interval": 1500
       },
+      "hard_drop_after": 0,
       "held": false,
       "hold": null,
       "input": {
+        "buffered_hold": false,
+        "buffered_rotation": 0,
         "charged": false,
         "direction": -1,
+        "hold": false,
         "left": true,
         "repeat_at": 8400,
         "right": false,
+        "rotations": [
+          false,
+          false,
+          false
+        ],
         "soft_drop": false,
         "soft_drop_at": null
       },
@@ -567,12 +581,14 @@
       "rotation": 0,
       "rules": {
         "automatic_lock": true,
+        "entry_delay": 0,
         "gravity_interval": 50000,
         "lock_delay": 30000,
         "lock_reset_limit": 15,
         "mode": "sprint",
-        "version": "solo-v1"
+        "version": "solo-v2"
       },
+      "spawn_at": null,
       "time": 0,
       "x": 3,
       "y": -2
@@ -1061,22 +1077,36 @@
         ]
       ],
       "complete": false,
-      "format_version": 1,
+      "format_version": 2,
       "gravity_at": 50000,
       "handling": {
         "arr": 1800,
+        "cancel_das_on_direction_change": true,
         "das": 8400,
         "dcd": 0,
+        "ihs": "off",
+        "irs": "off",
+        "prefer_soft_drop": false,
+        "safe_lock_delay": 0,
         "soft_drop_interval": 1500
       },
+      "hard_drop_after": 0,
       "held": false,
       "hold": null,
       "input": {
+        "buffered_hold": false,
+        "buffered_rotation": 0,
         "charged": true,
         "direction": -1,
+        "hold": false,
         "left": true,
         "repeat_at": 10200,
         "right": false,
+        "rotations": [
+          true,
+          false,
+          false
+        ],
         "soft_drop": false,
         "soft_drop_at": null
       },
@@ -1144,12 +1174,14 @@
       "rotation": 1,
       "rules": {
         "automatic_lock": true,
+        "entry_delay": 0,
         "gravity_interval": 50000,
         "lock_delay": 30000,
         "lock_reset_limit": 15,
         "mode": "sprint",
-        "version": "solo-v1"
+        "version": "solo-v2"
       },
+      "spawn_at": null,
       "time": 10000,
       "x": 2,
       "y": -2
@@ -1638,22 +1670,36 @@
         ]
       ],
       "complete": false,
-      "format_version": 1,
+      "format_version": 2,
       "gravity_at": 50000,
       "handling": {
         "arr": 1800,
+        "cancel_das_on_direction_change": true,
         "das": 8400,
         "dcd": 0,
+        "ihs": "off",
+        "irs": "off",
+        "prefer_soft_drop": false,
+        "safe_lock_delay": 0,
         "soft_drop_interval": 1500
       },
+      "hard_drop_after": 0,
       "held": false,
       "hold": null,
       "input": {
+        "buffered_hold": false,
+        "buffered_rotation": 0,
         "charged": false,
         "direction": 0,
+        "hold": false,
         "left": false,
         "repeat_at": null,
         "right": false,
+        "rotations": [
+          true,
+          false,
+          false
+        ],
         "soft_drop": false,
         "soft_drop_at": null
       },
@@ -1721,12 +1767,14 @@
       "rotation": 1,
       "rules": {
         "automatic_lock": true,
+        "entry_delay": 0,
         "gravity_interval": 50000,
         "lock_delay": 30000,
         "lock_reset_limit": 15,
         "mode": "sprint",
-        "version": "solo-v1"
+        "version": "solo-v2"
       },
+      "spawn_at": null,
       "time": 12000,
       "x": 0,
       "y": -2
@@ -2215,22 +2263,36 @@
         ]
       ],
       "complete": false,
-      "format_version": 1,
+      "format_version": 2,
       "gravity_at": 65000,
       "handling": {
         "arr": 1800,
+        "cancel_das_on_direction_change": true,
         "das": 8400,
         "dcd": 0,
+        "ihs": "off",
+        "irs": "off",
+        "prefer_soft_drop": false,
+        "safe_lock_delay": 0,
         "soft_drop_interval": 1500
       },
+      "hard_drop_after": 0,
       "held": false,
       "hold": null,
       "input": {
+        "buffered_hold": false,
+        "buffered_rotation": 0,
         "charged": false,
         "direction": 0,
+        "hold": false,
         "left": false,
         "repeat_at": null,
         "right": false,
+        "rotations": [
+          true,
+          false,
+          false
+        ],
         "soft_drop": false,
         "soft_drop_at": null
       },
@@ -2297,12 +2359,14 @@
       "rotation": 0,
       "rules": {
         "automatic_lock": true,
+        "entry_delay": 0,
         "gravity_interval": 50000,
         "lock_delay": 30000,
         "lock_reset_limit": 15,
         "mode": "sprint",
-        "version": "solo-v1"
+        "version": "solo-v2"
       },
+      "spawn_at": null,
       "time": 15000,
       "x": 3,
       "y": -2
@@ -2791,22 +2855,36 @@
         ]
       ],
       "complete": false,
-      "format_version": 1,
+      "format_version": 2,
       "gravity_at": 70000,
       "handling": {
         "arr": 1800,
+        "cancel_das_on_direction_change": true,
         "das": 8400,
         "dcd": 0,
+        "ihs": "off",
+        "irs": "off",
+        "prefer_soft_drop": false,
+        "safe_lock_delay": 0,
         "soft_drop_interval": 1500
       },
+      "hard_drop_after": 0,
       "held": true,
       "hold": "I",
       "input": {
+        "buffered_hold": false,
+        "buffered_rotation": 0,
         "charged": false,
         "direction": 0,
+        "hold": true,
         "left": false,
         "repeat_at": null,
         "right": false,
+        "rotations": [
+          true,
+          false,
+          false
+        ],
         "soft_drop": false,
         "soft_drop_at": null
       },
@@ -2872,12 +2950,14 @@
       "rotation": 0,
       "rules": {
         "automatic_lock": true,
+        "entry_delay": 0,
         "gravity_interval": 50000,
         "lock_delay": 30000,
         "lock_reset_limit": 15,
         "mode": "sprint",
-        "version": "solo-v1"
+        "version": "solo-v2"
       },
+      "spawn_at": null,
       "time": 20000,
       "x": 3,
       "y": -2
@@ -3366,22 +3446,36 @@
         ]
       ],
       "complete": false,
-      "format_version": 1,
+      "format_version": 2,
       "gravity_at": 70000,
       "handling": {
         "arr": 1800,
+        "cancel_das_on_direction_change": true,
         "das": 8400,
         "dcd": 0,
+        "ihs": "off",
+        "irs": "off",
+        "prefer_soft_drop": false,
+        "safe_lock_delay": 0,
         "soft_drop_interval": 1500
       },
+      "hard_drop_after": 0,
       "held": true,
       "hold": "I",
       "input": {
+        "buffered_hold": false,
+        "buffered_rotation": 0,
         "charged": false,
         "direction": 0,
+        "hold": true,
         "left": false,
         "repeat_at": null,
         "right": false,
+        "rotations": [
+          true,
+          false,
+          false
+        ],
         "soft_drop": true,
         "soft_drop_at": 26500
       },
@@ -3447,12 +3541,14 @@
       "rotation": 0,
       "rules": {
         "automatic_lock": true,
+        "entry_delay": 0,
         "gravity_interval": 50000,
         "lock_delay": 30000,
         "lock_reset_limit": 15,
         "mode": "sprint",
-        "version": "solo-v1"
+        "version": "solo-v2"
       },
+      "spawn_at": null,
       "time": 25000,
       "x": 3,
       "y": -1
@@ -3941,22 +4037,36 @@
         ]
       ],
       "complete": false,
-      "format_version": 1,
+      "format_version": 2,
       "gravity_at": 70000,
       "handling": {
         "arr": 1800,
+        "cancel_das_on_direction_change": true,
         "das": 8400,
         "dcd": 0,
+        "ihs": "off",
+        "irs": "off",
+        "prefer_soft_drop": false,
+        "safe_lock_delay": 0,
         "soft_drop_interval": 1500
       },
+      "hard_drop_after": 0,
       "held": true,
       "hold": "I",
       "input": {
+        "buffered_hold": false,
+        "buffered_rotation": 0,
         "charged": false,
         "direction": 0,
+        "hold": true,
         "left": false,
         "repeat_at": null,
         "right": false,
+        "rotations": [
+          true,
+          false,
+          false
+        ],
         "soft_drop": false,
         "soft_drop_at": null
       },
@@ -4022,12 +4132,14 @@
       "rotation": 0,
       "rules": {
         "automatic_lock": true,
+        "entry_delay": 0,
         "gravity_interval": 50000,
         "lock_delay": 30000,
         "lock_reset_limit": 15,
         "mode": "sprint",
-        "version": "solo-v1"
+        "version": "solo-v2"
       },
+      "spawn_at": null,
       "time": 55000,
       "x": 3,
       "y": 18
@@ -4516,22 +4628,36 @@
         ]
       ],
       "complete": false,
-      "format_version": 1,
+      "format_version": 2,
       "gravity_at": 70000,
       "handling": {
         "arr": 1800,
+        "cancel_das_on_direction_change": true,
         "das": 8400,
         "dcd": 0,
+        "ihs": "off",
+        "irs": "off",
+        "prefer_soft_drop": false,
+        "safe_lock_delay": 0,
         "soft_drop_interval": 1500
       },
+      "hard_drop_after": 0,
       "held": true,
       "hold": "I",
       "input": {
+        "buffered_hold": false,
+        "buffered_rotation": 0,
         "charged": false,
         "direction": 0,
+        "hold": true,
         "left": false,
         "repeat_at": null,
         "right": false,
+        "rotations": [
+          true,
+          true,
+          false
+        ],
         "soft_drop": false,
         "soft_drop_at": null
       },
@@ -4597,12 +4723,14 @@
       "rotation": 3,
       "rules": {
         "automatic_lock": true,
+        "entry_delay": 0,
         "gravity_interval": 50000,
         "lock_delay": 30000,
         "lock_reset_limit": 15,
         "mode": "sprint",
-        "version": "solo-v1"
+        "version": "solo-v2"
       },
+      "spawn_at": null,
       "time": 60000,
       "x": 4,
       "y": 17
@@ -5091,22 +5219,36 @@
         ]
       ],
       "complete": false,
-      "format_version": 1,
+      "format_version": 2,
       "gravity_at": 70000,
       "handling": {
         "arr": 1800,
+        "cancel_das_on_direction_change": true,
         "das": 8400,
         "dcd": 0,
+        "ihs": "off",
+        "irs": "off",
+        "prefer_soft_drop": false,
+        "safe_lock_delay": 0,
         "soft_drop_interval": 1500
       },
+      "hard_drop_after": 0,
       "held": true,
       "hold": "I",
       "input": {
+        "buffered_hold": false,
+        "buffered_rotation": 0,
         "charged": false,
         "direction": 1,
+        "hold": true,
         "left": false,
         "repeat_at": 73400,
         "right": true,
+        "rotations": [
+          true,
+          true,
+          false
+        ],
         "soft_drop": false,
         "soft_drop_at": null
       },
@@ -5172,12 +5314,14 @@
       "rotation": 3,
       "rules": {
         "automatic_lock": true,
+        "entry_delay": 0,
         "gravity_interval": 50000,
         "lock_delay": 30000,
         "lock_reset_limit": 15,
         "mode": "sprint",
-        "version": "solo-v1"
+        "version": "solo-v2"
       },
+      "spawn_at": null,
       "time": 65000,
       "x": 5,
       "y": 17
@@ -5666,22 +5810,36 @@
         ]
       ],
       "complete": false,
-      "format_version": 1,
+      "format_version": 2,
       "gravity_at": 120000,
       "handling": {
         "arr": 1800,
+        "cancel_das_on_direction_change": true,
         "das": 8400,
         "dcd": 0,
+        "ihs": "off",
+        "irs": "off",
+        "prefer_soft_drop": false,
+        "safe_lock_delay": 0,
         "soft_drop_interval": 1500
       },
+      "hard_drop_after": 0,
       "held": true,
       "hold": "I",
       "input": {
+        "buffered_hold": false,
+        "buffered_rotation": 0,
         "charged": false,
         "direction": 0,
+        "hold": true,
         "left": false,
         "repeat_at": null,
         "right": false,
+        "rotations": [
+          true,
+          true,
+          false
+        ],
         "soft_drop": false,
         "soft_drop_at": null
       },
@@ -5747,12 +5905,14 @@
       "rotation": 3,
       "rules": {
         "automatic_lock": true,
+        "entry_delay": 0,
         "gravity_interval": 50000,
         "lock_delay": 30000,
         "lock_reset_limit": 15,
         "mode": "sprint",
-        "version": "solo-v1"
+        "version": "solo-v2"
       },
+      "spawn_at": null,
       "time": 80000,
       "x": 8,
       "y": 17
@@ -6241,22 +6401,36 @@
         ]
       ],
       "complete": false,
-      "format_version": 1,
+      "format_version": 2,
       "gravity_at": 140000,
       "handling": {
         "arr": 1800,
+        "cancel_das_on_direction_change": true,
         "das": 8400,
         "dcd": 0,
+        "ihs": "off",
+        "irs": "off",
+        "prefer_soft_drop": false,
+        "safe_lock_delay": 0,
         "soft_drop_interval": 1500
       },
+      "hard_drop_after": 0,
       "held": false,
       "hold": "I",
       "input": {
+        "buffered_hold": false,
+        "buffered_rotation": 0,
         "charged": false,
         "direction": 0,
+        "hold": true,
         "left": false,
         "repeat_at": null,
         "right": false,
+        "rotations": [
+          true,
+          true,
+          false
+        ],
         "soft_drop": false,
         "soft_drop_at": null
       },
@@ -6321,12 +6495,14 @@
       "rotation": 0,
       "rules": {
         "automatic_lock": true,
+        "entry_delay": 0,
         "gravity_interval": 50000,
         "lock_delay": 30000,
         "lock_reset_limit": 15,
         "mode": "sprint",
-        "version": "solo-v1"
+        "version": "solo-v2"
       },
+      "spawn_at": null,
       "time": 90000,
       "x": 3,
       "y": -2
@@ -6334,8 +6510,13 @@
   ],
   "handling": {
     "arr": 1800,
+    "cancel_das_on_direction_change": true,
     "das": 8400,
     "dcd": 0,
+    "ihs": "off",
+    "irs": "off",
+    "prefer_soft_drop": false,
+    "safe_lock_delay": 0,
     "soft_drop_interval": 1500
   },
   "inputs": [

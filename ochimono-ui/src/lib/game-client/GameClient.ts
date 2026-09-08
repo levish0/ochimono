@@ -12,6 +12,7 @@ import * as m from '$lib/paraglide/messages';
 import { Application, Container, Graphics, Rectangle, Sprite, Text } from 'pixi.js';
 import { PracticeGame, colors, shapes, type Piece, type GameAction } from '$lib/game/engine';
 import { readSettings, type Settings } from './settings';
+import { HeldKeys } from './held-keys';
 import { ease, Motion } from '$lib/game-ui/motion/motion';
 import { icon, label, preloadIcons, textAt, type Glyph } from '$lib/game-ui/rendering/visuals';
 import { Sound } from '$lib/game-ui/audio/sound';
@@ -34,6 +35,7 @@ export class GameClient {
 	private motion = new Motion();
 	private sound = new Sound();
 	private settings: Settings = readSettings();
+	private heldKeys = new HeldKeys();
 	private themeTransition = { value: this.settings.dark ? 1 : 0 };
 	private lastTheme = -1;
 	private settingsFrame?: SettingsPanelFrame;
@@ -801,7 +803,7 @@ export class GameClient {
 		const sections = [
 			[m.ui_display(), 'full', 0],
 			[m.ui_controls(), 'keys', 365],
-			[m.ui_sound(), 'sound', 978]
+			[m.ui_sound(), 'sound', 1718]
 		] as const;
 		sections.forEach(([title, glyph, offset], i) => {
 			const row = new SettingsSidebarItem(
@@ -855,7 +857,7 @@ export class GameClient {
 			this.toggle('dark')
 		);
 		textAt(this.settingsRows, m.ui_controls(), 33, 377, 24);
-		this.sliderRow(m.ui_repeat_delay_das(), 'das', 430, 0, 500, 1, ' ms');
+		this.sliderRow(m.ui_repeat_delay_das(), 'das', 430, 0, 500, 0.1, ' ms');
 		textAt(
 			this.settingsRows,
 			m.ui_delay_before_a_held_key_starts_repeating(),
@@ -864,12 +866,47 @@ export class GameClient {
 			12,
 			0x65717c
 		);
-		this.sliderRow(m.ui_repeat_interval_arr(), 'arr', 545, 0, 100, 1, ' ms');
+		this.sliderRow(m.ui_repeat_interval_arr(), 'arr', 545, 0, 100, 0.1, ' ms');
 		textAt(this.settingsRows, m.ui_lower_values_repeat_movement_faster(), 34, 601, 12, 0x65717c);
+		this.sliderRow(m.ui_das_cut_delay(), 'dcd', 650, 0, 1000, 0.1, ' ms');
+		this.sliderRow(m.ui_soft_drop_interval(), 'softDropInterval', 720, 1, 1000, 0.1, ' ms');
+		this.settingRow(m.ui_sonic_drop(), this.settings.sonicDrop ? m.ui_on() : m.ui_off(), 790, () =>
+			this.toggle('sonicDrop')
+		);
+		this.sliderRow(m.ui_safe_lock_delay(), 'safeLockDelay', 860, 0, 1000, 1, ' ms');
+		this.settingRow(m.ui_cancel_das(), this.settings.cancelDas ? m.ui_on() : m.ui_off(), 930, () =>
+			this.toggle('cancelDas')
+		);
+		this.settingRow(
+			m.ui_prefer_soft_drop(),
+			this.settings.preferSoftDrop ? m.ui_on() : m.ui_off(),
+			1000,
+			() => this.toggle('preferSoftDrop')
+		);
+		for (const [key, title, y] of [
+			['irs', m.ui_rotation_buffering(), 1070],
+			['ihs', m.ui_hold_buffering(), 1140]
+		] as const) {
+			const read = () => this.settings[key].toUpperCase();
+			this.settingRow(
+				title,
+				read(),
+				y,
+				() => {
+					const modes = ['off', 'hold', 'tap'] as const;
+					this.settings[key] = modes[(modes.indexOf(this.settings[key]) + 1) % modes.length];
+					this.saveSettings();
+				},
+				read
+			);
+		}
+		this.sliderRow(m.ui_zen_entry_delay(), 'entryDelay', 1210, 0, 1000, 1, ' ms');
+		textAt(this.settingsRows, m.ui_buffering_description(), 34, 1270, 12, 0x65717c);
 		const bindings: [string[], string][] = [
 			[['←', '→'], m.ui_move_left_right()],
 			[['↓'], m.ui_soft_drop()],
 			[['X', '↑', 'Z'], m.ui_rotate_clockwise_counterclockwise()],
+			[['A'], m.ui_rotate_180()],
 			[['Space'], m.ui_hard_drop()],
 			[['C', 'Shift'], m.ui_hold()],
 			[['Ctrl', 'Z'], m.ui_undo_zen()],
@@ -877,7 +914,7 @@ export class GameClient {
 		];
 		bindings.forEach(([keys, description], index) => {
 			const row = new Container();
-			row.position.set(34, 650 + index * 44);
+			row.position.set(34, 1330 + index * 44);
 			row.addChild(new KeyCaps(keys, this.motion, this.settings.dark, 160));
 			const caption = textAt(row, description, 170, 4, 13);
 			caption.style.wordWrap = true;
@@ -885,9 +922,9 @@ export class GameClient {
 			this.settingsRows.addChild(row);
 		});
 
-		textAt(this.settingsRows, m.ui_sound(), 33, 990, 24);
-		this.sliderRow(m.ui_effects_volume(), 'volume', 1043, 0, 100, 1, '%');
-		textAt(this.settingsRows, m.ui_menu_and_gameplay_effects(), 34, 1101, 14, 0x65717c);
+		textAt(this.settingsRows, m.ui_sound(), 33, 1730, 24);
+		this.sliderRow(m.ui_effects_volume(), 'volume', 1783, 0, 100, 1, '%');
+		textAt(this.settingsRows, m.ui_menu_and_gameplay_effects(), 34, 1841, 14, 0x65717c);
 		this.settingsScrollbar = new Graphics();
 		this.settingsScrollbar.x = w - 7;
 		this.drawerContent.addChild(this.settingsScrollbar);
@@ -938,7 +975,7 @@ export class GameClient {
 			entry.node.y = words.length ? y : entry.y;
 			if (entry.node.visible) y += entry.node.height + 14;
 		}
-		this.settingsContentHeight = words.length ? y + 20 : 1160;
+		this.settingsContentHeight = words.length ? y + 20 : 1900;
 		if (this.searchEmpty)
 			this.searchEmpty.visible =
 				words.length > 0 && !this.searchEntries.some((entry) => entry.node.visible);
@@ -952,7 +989,13 @@ export class GameClient {
 		this.settingsScroll.scrollTo(0);
 		this.focus = -1;
 	}
-	private settingRow(title: string, value: string, y: number, run: () => void) {
+	private settingRow(
+		title: string,
+		value: string,
+		y: number,
+		run: () => void,
+		read?: () => string
+	) {
 		const w = Math.min(530, this.width - 36),
 			root = new Container();
 		root.y = y;
@@ -974,7 +1017,8 @@ export class GameClient {
 		const toggle = new Graphics();
 		let on = value === m.ui_on();
 		const state = { position: on ? 1 : 0, fill: on ? 1 : 0 };
-		v.visible = false;
+		v.visible = !!read;
+		toggle.visible = !read;
 		const draw = () => {
 			const width = 42 + 14 * state.position;
 			const right = w - 39;
@@ -995,6 +1039,10 @@ export class GameClient {
 		const activate = () => {
 			this.sound.play('open');
 			run();
+			if (read) {
+				v.text = read();
+				return;
+			}
 			on = !on;
 			this.motion.to(
 				state,
@@ -1012,7 +1060,7 @@ export class GameClient {
 	}
 	private sliderRow(
 		title: string,
-		key: 'volume' | 'das' | 'arr',
+		key: 'volume' | 'das' | 'arr' | 'dcd' | 'softDropInterval' | 'safeLockDelay' | 'entryDelay',
 		y: number,
 		min: number,
 		max: number,
@@ -1049,7 +1097,9 @@ export class GameClient {
 		};
 		const set = (v: number) => {
 			if (!Number.isFinite(v)) return;
-			this.settings[key] = Math.min(max, Math.max(min, Math.round(v / step) * step));
+			this.settings[key] = Number(
+				Math.min(max, Math.max(min, Math.round(v / step) * step)).toFixed(1)
+			);
 			redraw();
 		};
 		const adjust = (direction: number) => {
@@ -1085,7 +1135,17 @@ export class GameClient {
 		this.panelAdjust.push(adjust);
 		this.panelFocus.push(bg);
 	}
-	private toggle(key: 'dark' | 'motion' | 'ghost' | 'grid' | 'gravity') {
+	private toggle(
+		key:
+			| 'dark'
+			| 'motion'
+			| 'ghost'
+			| 'grid'
+			| 'gravity'
+			| 'sonicDrop'
+			| 'cancelDas'
+			| 'preferSoftDrop'
+	) {
 		this.settings[key] = !this.settings[key];
 		if (key === 'dark')
 			this.motion.to(
@@ -1234,7 +1294,7 @@ export class GameClient {
 	};
 	private keyUp = (e: KeyboardEvent) => {
 		if (this.screen !== 'game' || this.paused || this.panel || this.finished) return;
-		const action = this.keyAction(e.code);
+		const action = this.heldKeys.release(e.code);
 		if (action) {
 			this.syncGame();
 			this.game.input(action, false);
@@ -1248,6 +1308,7 @@ export class GameClient {
 			ArrowUp: 'clockwise',
 			KeyX: 'clockwise',
 			KeyZ: 'counterclockwise',
+			KeyA: 'half_turn',
 			KeyC: 'hold',
 			ShiftLeft: 'hold',
 			ShiftRight: 'hold',
@@ -1260,6 +1321,7 @@ export class GameClient {
 		this.simulationTicks = this.game.state.time;
 	}
 	private releaseInputs() {
+		this.heldKeys.clear();
 		this.game.releaseInputs();
 		this.resetSimulationClock();
 	}
@@ -1283,13 +1345,15 @@ export class GameClient {
 		} else {
 			const action = this.keyAction(key);
 			if (!action) return;
+			if (!this.heldKeys.press(key, action)) return;
 			const lines = this.game.state.lines;
+			const placed = this.game.state.placed;
 			this.game.input(action);
-			if (action === 'hard_drop') {
+			if (action === 'hard_drop' && this.game.state.placed > placed) {
 				this.sound.play(this.game.state.lines > lines ? 'clear' : 'drop');
 				this.visual.drop = 1;
 				this.motion.to(this.visual, { drop: 0 }, 350, ease.outQuint);
-			} else this.sound.play('move');
+			} else if (action !== 'hard_drop') this.sound.play('move');
 		}
 		this.time = this.game.state.time / 60_000;
 		this.dirty = true;
@@ -1352,7 +1416,7 @@ export class GameClient {
 			})
 		);
 		const s = this.game.state;
-		if (!s.over && !s.complete) {
+		if (s.active && !s.over && !s.complete) {
 			const ghost = this.game.ghostY();
 			s.matrix.forEach((row, y) =>
 				row.forEach((v, x) => {
