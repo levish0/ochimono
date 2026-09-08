@@ -7,3 +7,5 @@ bun.lockb
 
 # Miscellaneous
 /static/
+/vendor/
+/src/lib/game/fixtures/

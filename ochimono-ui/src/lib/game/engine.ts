@@ -1,4 +1,6 @@
-// Local practice rules. Kept independent of rendering for the future shared engine.
+import { Game as WasmGame } from 'ochimono-engine';
+import type { Settings } from '../game-client/settings';
+
 export type Piece = 'I' | 'O' | 'T' | 'S' | 'Z' | 'J' | 'L';
 export const shapes: Record<Piece, number[][]> = {
 	I: [
@@ -46,8 +48,19 @@ export const colors: Record<Piece, string> = {
 	J: '#87aef2',
 	L: '#f1af7c'
 };
+
+export type GameAction =
+	| 'left'
+	| 'right'
+	| 'soft_drop'
+	| 'clockwise'
+	| 'counterclockwise'
+	| 'half_turn'
+	| 'hold'
+	| 'hard_drop';
 export interface State {
 	board: (Piece | null)[][];
+	board_top: number;
 	queue: Piece[];
 	piece: Piece;
 	matrix: number[][];
@@ -58,130 +71,70 @@ export interface State {
 	lines: number;
 	placed: number;
 	over: boolean;
+	complete: boolean;
+	time: number;
+	ghost_y: number;
 }
+
+const handling = (settings: Pick<Settings, 'das' | 'arr'>) =>
+	JSON.stringify({
+		das: settings.das * 60,
+		arr: settings.arr * 60,
+		dcd: 0,
+		soft_drop_interval: 25 * 60
+	});
+
+/** Browser ownership and serialization only; all rules execute in Rust. */
 export class PracticeGame {
+	private engine: WasmGame;
 	state: State;
-	private history: State[] = [];
-	constructor() {
-		this.state = {
-			board: Array.from({ length: 20 }, () => Array(10).fill(null)),
-			queue: [],
-			piece: 'T',
-			matrix: [],
-			x: 3,
-			y: 0,
-			hold: null,
-			held: false,
-			lines: 0,
-			placed: 0,
-			over: false
-		};
-		this.spawn();
+	constructor(
+		mode: 'zen' | 'sprint' = 'zen',
+		settings = { das: 140, arr: 30, gravity: false },
+		seed = String(crypto.getRandomValues(new Uint32Array(1))[0])
+	) {
+		this.engine = new WasmGame(seed, mode, settings.gravity, handling(settings));
+		this.state = JSON.parse(this.engine.view());
 	}
-	private replenish() {
-		while (this.state.queue.length < 7) {
-			const bag = Object.keys(shapes) as Piece[];
-			for (let i = bag.length - 1; i > 0; i--) {
-				const j = Math.floor(Math.random() * (i + 1));
-				[bag[i], bag[j]] = [bag[j], bag[i]];
-			}
-			this.state.queue.push(...bag);
-		}
+	private refresh() {
+		this.state = JSON.parse(this.engine.view());
 	}
-	private spawn(piece?: Piece) {
-		this.replenish();
-		const s = this.state;
-		s.piece = piece ?? s.queue.shift()!;
-		s.matrix = shapes[s.piece].map((r) => [...r]);
-		s.x = Math.floor((10 - s.matrix.length) / 2);
-		s.y = 0;
-		s.over = !this.fits(s.x, s.y);
-		this.replenish();
+	input(action: GameAction, pressed = true) {
+		this.engine.input(JSON.stringify({ at: this.state.time, action, pressed }));
+		this.refresh();
 	}
-	fits(x: number, y: number, matrix = this.state.matrix) {
-		return matrix.every((row, dy) =>
-			row.every(
-				(v, dx) =>
-					!v ||
-					(x + dx >= 0 &&
-						x + dx < 10 &&
-						y + dy < 20 &&
-						(y + dy < 0 || !this.state.board[y + dy][x + dx]))
-			)
-		);
+	advance(ticks: number) {
+		this.engine.advance(ticks);
+		this.refresh();
 	}
-	move(dx: number, dy = 0) {
-		const s = this.state;
-		if (s.over || !this.fits(s.x + dx, s.y + dy)) return false;
-		s.x += dx;
-		s.y += dy;
-		return true;
-	}
-	rotate(direction = 1) {
-		const s = this.state;
-		if (s.over) return false;
-		const n = s.matrix.length;
-		const rotated = s.matrix.map((row, y) =>
-			row.map((_, x) => (direction === 1 ? s.matrix[n - 1 - x][y] : s.matrix[x][n - 1 - y]))
-		);
-		// Deliberately a practice-only kick policy; not presented as official SRS.
-		for (const [dx, dy] of [
-			[0, 0],
-			[-1, 0],
-			[1, 0],
-			[-2, 0],
-			[2, 0],
-			[0, -1]
-		]) {
-			if (this.fits(s.x + dx, s.y + dy, rotated)) {
-				s.matrix = rotated;
-				s.x += dx;
-				s.y += dy;
-				return true;
-			}
-		}
-		return false;
+	configure(settings: Pick<Settings, 'das' | 'arr' | 'gravity'>) {
+		this.engine.configure(settings.gravity, handling(settings));
+		this.refresh();
 	}
 	ghostY() {
-		let y = this.state.y;
-		while (this.fits(this.state.x, y + 1)) y++;
-		return y;
+		return this.state.ghost_y;
 	}
-	hold() {
-		const s = this.state;
-		if (s.over || s.held) return;
-		const old = s.hold;
-		s.hold = s.piece;
-		this.spawn(old ?? undefined);
-		s.held = true;
+	snapshot() {
+		return this.engine.snapshot();
 	}
-	lock() {
-		const s = this.state;
-		if (s.over) return 0;
-		this.history.push(structuredClone(s));
-		if (this.history.length > 100) this.history.shift();
-		s.matrix.forEach((row, dy) =>
-			row.forEach((v, dx) => {
-				if (v && s.y + dy >= 0) s.board[s.y + dy][s.x + dx] = s.piece;
-			})
-		);
-		const remaining = s.board.filter((row) => row.some((v) => !v));
-		const cleared = 20 - remaining.length;
-		s.board = [...Array.from({ length: cleared }, () => Array(10).fill(null)), ...remaining];
-		s.lines += cleared;
-		s.placed++;
-		s.held = false;
-		this.spawn();
-		return cleared;
+	restore(snapshot: string) {
+		this.engine.restore(snapshot);
+		this.refresh();
 	}
-	drop() {
-		if (this.state.over) return 0;
-		this.state.y = this.ghostY();
-		return this.lock();
+	releaseInputs() {
+		this.engine.release_inputs();
 	}
 	undo() {
-		const previous = this.history.pop();
-		if (previous) this.state = previous;
-		return !!previous;
+		const changed = this.engine.undo();
+		this.refresh();
+		return changed;
+	}
+	redo() {
+		const changed = this.engine.redo();
+		this.refresh();
+		return changed;
+	}
+	destroy() {
+		this.engine.free();
 	}
 }

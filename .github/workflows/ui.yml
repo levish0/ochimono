@@ -4,10 +4,12 @@ on:
   push:
     paths:
       - 'ochimono-ui/**'
+      - 'ochimono-engine/**'
       - '.github/workflows/ui.yml'
   pull_request:
     paths:
       - 'ochimono-ui/**'
+      - 'ochimono-engine/**'
       - '.github/workflows/ui.yml'
   workflow_dispatch:
 
@@ -77,6 +79,10 @@ jobs:
       - name: Unit tests
         if: matrix.task == 'test'
         run: pnpm test:unit --run
+
+      - name: Check shared replay fixture
+        if: matrix.task == 'test'
+        run: cmp ../ochimono-engine/tests/fixtures/replay.json src/lib/game/fixtures/replay.json
 
       - name: Browser tests
         if: matrix.task == 'test'

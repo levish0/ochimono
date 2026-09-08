@@ -18,6 +18,8 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          targets: wasm32-unknown-unknown
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
@@ -25,4 +27,7 @@ jobs:
           workspaces: "ochimono-engine -> target"
 
       - name: Release Build
-        run: cargo build --workspace --release --locked
+        run: cargo build --release --locked
+
+      - name: WASM build
+        run: cargo build --release --locked --target wasm32-unknown-unknown --features wasm

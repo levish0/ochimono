@@ -1,6 +1,5 @@
 import { SettingsSidebarItem } from '$lib/game-ui/components/settings/SettingsSidebarItem';
 import { SettingsPanelFrame } from '$lib/game-ui/components/settings/SettingsPanelFrame';
-import { consumeRepeats } from '$lib/game/input-repeat';
 import { NumberEditor } from '$lib/game-ui/components/menu/NumberEditor';
 import { SettingsSearch } from '$lib/game-ui/components/navigation/SettingsSearch';
 import { KeyCaps } from '$lib/game-ui/components/menu/KeyCaps';
@@ -11,7 +10,7 @@ import { ScrollController } from '$lib/game-ui/scroll/ScrollController';
 import { MenuButton, type Action } from '$lib/game-ui/components/menu/MenuButton';
 import * as m from '$lib/paraglide/messages';
 import { Application, Container, Graphics, Rectangle, Sprite, Text } from 'pixi.js';
-import { PracticeGame, colors, shapes, type Piece } from '$lib/game/engine';
+import { PracticeGame, colors, shapes, type Piece, type GameAction } from '$lib/game/engine';
 import { readSettings, type Settings } from './settings';
 import { ease, Motion } from '$lib/game-ui/motion/motion';
 import { icon, label, preloadIcons, textAt, type Glyph } from '$lib/game-ui/rendering/visuals';
@@ -88,7 +87,8 @@ export class GameClient {
 	private finished = false;
 	private saved = false;
 	private time = 0;
-	private gravity = 0;
+	private simulationOrigin = performance.now();
+	private simulationTicks = 0;
 	private dirty = true;
 	private focus = -1;
 	private pointer = { x: 0, y: 0 };
@@ -118,7 +118,6 @@ export class GameClient {
 	private lastInteraction = performance.now();
 	private lastTick = performance.now();
 	private lastClock = 0;
-	private held = new Map<string, { next: number }>();
 	private disposed = false;
 	private initialized = false;
 	private observer?: ResizeObserver;
@@ -225,8 +224,8 @@ export class GameClient {
 	};
 	private blur = () => {
 		this.endDrag();
-		this.held.clear();
 		if (this.screen === 'game' && !this.paused && !this.finished) this.pause(true);
+		else this.releaseInputs();
 	};
 
 	private activateLogo() {
@@ -411,7 +410,7 @@ export class GameClient {
 				music: () => this.openPanel('music'),
 				notifications: () => this.openPanel('notifications'),
 				code: () => {
-					window.open('https://github.com/ochimono/ochimono', '_blank', 'noopener,noreferrer');
+					window.open('https://github.com/levish0/ochimono', '_blank', 'noopener,noreferrer');
 				},
 				sound: () => {
 					this.settings.volume = this.settings.volume ? 0 : 25;
@@ -456,8 +455,8 @@ export class GameClient {
 		this.linesText.position.set(-275, -29);
 		this.timeText.position.set(-275, 76);
 		this.piecesText.position.set(-275, 160);
-		this.titleText.position.set(-130, -297);
-		this.modeDescription.position.set(-130, -254);
+		this.titleText.position.set(-275, -297);
+		this.modeDescription.position.set(-275, -254);
 		this.modeDescription.style.fontSize = 14;
 		this.modeDescription.alpha = 0.7;
 		const help = textAt(
@@ -482,13 +481,13 @@ export class GameClient {
 		this.panel = null;
 		this.motion.to(this.visual, { drawer: 0 }, 300);
 		this.mode = mode;
-		this.game = new PracticeGame();
+		this.game.destroy();
+		this.game = new PracticeGame(mode, this.settings);
 		this.time = 0;
-		this.gravity = 0;
 		this.saved = false;
 		this.finished = false;
 		this.paused = false;
-		this.held.clear();
+		this.releaseInputs();
 		this.dirty = true;
 		this.screen = 'game';
 		this.titleText.text = mode === 'zen' ? 'ZEN' : '40 LINES';
@@ -514,7 +513,7 @@ export class GameClient {
 		if (this.screen === 'game') this.saveRecord();
 		this.screen = 'menu';
 		this.paused = false;
-		this.held.clear();
+		this.releaseInputs();
 		this.panel = null;
 		this.motion.to(
 			this.visual,
@@ -527,8 +526,9 @@ export class GameClient {
 	}
 	private pause(value: boolean) {
 		if (this.screen !== 'game' || (!value && this.finished)) return;
+		if (value) this.syncGame();
 		this.paused = value;
-		this.held.clear();
+		this.releaseInputs();
 		this.motion.to(this.visual, { pause: value ? 1 : 0 }, 200, ease.in);
 		if (value) {
 			this.buildPause();
@@ -594,7 +594,7 @@ export class GameClient {
 	private openPanel(panel: Panel) {
 		if (this.screen === 'game') this.pause(true);
 		this.panel = panel;
-		this.held.clear();
+		this.releaseInputs();
 		this.buildDrawer();
 		this.motion.to(this.visual, { drawer: 1 }, 600, ease.outQuint);
 		this.announce(
@@ -1097,6 +1097,8 @@ export class GameClient {
 		this.saveSettings();
 	}
 	private saveSettings() {
+		this.game.configure(this.settings);
+		this.resetSimulationClock();
 		this.sound.volume = this.settings.volume;
 		this.motionPreference();
 		this.dirty = true;
@@ -1228,59 +1230,73 @@ export class GameClient {
 			if (key === 'KeyR') this.start(this.mode);
 			return;
 		}
-		if (key === 'ArrowLeft' || key === 'ArrowRight' || key === 'ArrowDown')
-			this.held.set(key, { next: performance.now() + this.settings.das });
 		this.input(key, e.ctrlKey);
 	};
 	private keyUp = (e: KeyboardEvent) => {
-		this.held.delete(e.code);
+		if (this.screen !== 'game' || this.paused || this.panel || this.finished) return;
+		const action = this.keyAction(e.code);
+		if (action) {
+			this.syncGame();
+			this.game.input(action, false);
+		}
 	};
+	private keyAction(key: string): GameAction | undefined {
+		const actions: Record<string, GameAction> = {
+			ArrowLeft: 'left',
+			ArrowRight: 'right',
+			ArrowDown: 'soft_drop',
+			ArrowUp: 'clockwise',
+			KeyX: 'clockwise',
+			KeyZ: 'counterclockwise',
+			KeyC: 'hold',
+			ShiftLeft: 'hold',
+			ShiftRight: 'hold',
+			Space: 'hard_drop'
+		};
+		return actions[key];
+	}
+	private resetSimulationClock() {
+		this.simulationOrigin = performance.now();
+		this.simulationTicks = this.game.state.time;
+	}
+	private releaseInputs() {
+		this.game.releaseInputs();
+		this.resetSimulationClock();
+	}
+	private syncGame(now = performance.now()) {
+		if (this.screen !== 'game' || this.paused || this.panel || this.finished) return;
+		const placed = this.game.state.placed,
+			lines = this.game.state.lines;
+		this.game.advance(this.simulationTicks + Math.floor((now - this.simulationOrigin) * 60));
+		this.time = this.game.state.time / 60_000;
+		if (this.game.state.placed > placed)
+			this.sound.play(this.game.state.lines > lines ? 'clear' : 'drop');
+		this.dirty = true;
+		this.checkEnd();
+	}
 	private input(key: string, ctrl = false) {
-		let changed = false;
-		switch (key) {
-			case 'ArrowLeft':
-				changed = this.game.move(-1);
-				break;
-			case 'ArrowRight':
-				changed = this.game.move(1);
-				break;
-			case 'ArrowDown':
-				changed = this.game.move(0, 1);
-				break;
-			case 'ArrowUp':
-			case 'KeyX':
-				changed = this.game.rotate();
-				break;
-			case 'KeyZ':
-				changed = ctrl && this.mode === 'zen' ? this.game.undo() : this.game.rotate(-1);
-				break;
-			case 'KeyC':
-			case 'ShiftLeft':
-			case 'ShiftRight':
-				this.game.hold();
-				changed = true;
-				break;
-			case 'Space': {
-				const cleared = this.game.drop();
-				this.sound.play(cleared ? 'clear' : 'drop');
+		this.syncGame();
+		if (this.finished) return;
+		if (key === 'KeyZ' && ctrl && this.mode === 'zen') {
+			this.game.undo();
+			this.releaseInputs();
+		} else {
+			const action = this.keyAction(key);
+			if (!action) return;
+			const lines = this.game.state.lines;
+			this.game.input(action);
+			if (action === 'hard_drop') {
+				this.sound.play(this.game.state.lines > lines ? 'clear' : 'drop');
 				this.visual.drop = 1;
 				this.motion.to(this.visual, { drop: 0 }, 350, ease.outQuint);
-				changed = true;
-				this.gravity = 0;
-				break;
-			}
+			} else this.sound.play('move');
 		}
-		if (changed) {
-			this.dirty = true;
-			if (key !== 'Space') this.sound.play('move');
-		}
+		this.time = this.game.state.time / 60_000;
+		this.dirty = true;
 		this.checkEnd();
 	}
 	private checkEnd() {
-		if (
-			!this.finished &&
-			(this.game.state.over || (this.mode === 'sprint' && this.game.state.lines >= 40))
-		) {
+		if (!this.finished && (this.game.state.over || this.game.state.complete)) {
 			this.finished = true;
 			this.saveRecord();
 			this.pause(true);
@@ -1332,18 +1348,18 @@ export class GameClient {
 		};
 		this.game.state.board.forEach((row, y) =>
 			row.forEach((v, x) => {
-				if (v) block(g, bx + x * cell, by + y * cell, colors[v]);
+				if (v) block(g, bx + x * cell, by + (y + this.game.state.board_top) * cell, colors[v]);
 			})
 		);
 		const s = this.game.state;
-		if (!s.over) {
+		if (!s.over && !s.complete) {
 			const ghost = this.game.ghostY();
 			s.matrix.forEach((row, y) =>
 				row.forEach((v, x) => {
 					if (!v) return;
-					if (this.settings.ghost && ghost + y >= 0)
+					if (this.settings.ghost)
 						block(g, bx + (s.x + x) * cell, by + (ghost + y) * cell, colors[s.piece], cell, true);
-					if (s.y + y >= 0) block(g, bx + (s.x + x) * cell, by + (s.y + y) * cell, colors[s.piece]);
+					block(g, bx + (s.x + x) * cell, by + (s.y + y) * cell, colors[s.piece]);
 				})
 			);
 		}
@@ -1498,37 +1514,7 @@ export class GameClient {
 		this.dropGlow.clear();
 		if (v.drop > 0.01)
 			this.dropGlow.rect(-130, 294, 260, 4).fill({ color: menuColors.solo, alpha: v.drop });
-		if (this.screen === 'game' && !this.paused && !this.panel && !this.finished) {
-			this.time += elapsed;
-			for (const [key, held] of this.held) {
-				const count = consumeRepeats(held, now, key === 'ArrowDown' ? 25 : this.settings.arr);
-				let moved = false;
-				// Stop at collision, including instant ARR; never loop unbounded on zero.
-				for (let i = 0; i < count; i++) {
-					if (
-						!this.game.move(
-							key === 'ArrowLeft' ? -1 : key === 'ArrowRight' ? 1 : 0,
-							key === 'ArrowDown' ? 1 : 0
-						)
-					)
-						break;
-					moved = true;
-				}
-				if (moved) {
-					this.dirty = true;
-					this.sound.play('move');
-				}
-			}
-			if (this.mode === 'sprint' || this.settings.gravity) {
-				this.gravity += dt;
-				if (this.gravity >= 0.8) {
-					this.gravity = 0;
-					if (!this.game.move(0, 1)) this.game.lock();
-					this.dirty = true;
-					this.checkEnd();
-				}
-			}
-		}
+		this.syncGame(now);
 		if (this.dirty) this.drawGame();
 		if (now - this.lastClock > 80) {
 			this.timeText.text = formatTime(this.time);
@@ -1537,6 +1523,7 @@ export class GameClient {
 		}
 	};
 	destroy() {
+		this.game.destroy();
 		this.settingsSearch?.destroy();
 		this.disposed = true;
 		this.observer?.disconnect();

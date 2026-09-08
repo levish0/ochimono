@@ -2,5 +2,24 @@
 name = "ochimono-engine"
 version = "0.1.0"
 edition = "2024"
+license = "AGPL-3.0-only"
+rust-version = "1.98.0"
+repository = "https://github.com/levish0/ochimono"
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[features]
+wasm = ["dep:wasm-bindgen"]
 
 [dependencies]
+# External dependencies
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+wasm-bindgen = { version = "0.2.128", optional = true }
+rand_chacha = { version = "0.10.0", features = ["serde"] }
+rand_core = "0.10.1"
+
+[profile.release]
+lto = true
+codegen-units = 1

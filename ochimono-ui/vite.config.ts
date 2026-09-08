@@ -5,9 +5,11 @@ import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-cloudflare';
 import { sveltekit } from '@sveltejs/kit/vite';
+import wasm from 'vite-plugin-wasm';
 
 export default defineConfig({
 	plugins: [
+		wasm(),
 		tailwindcss(),
 		sveltekit({
 			compilerOptions: {

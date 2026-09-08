@@ -1,0 +1,22 @@
+{
+  "name": "ochimono-engine",
+  "type": "module",
+  "version": "0.1.0",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/levish0/ochimono"
+  },
+  "files": [
+    "ochimono_engine_bg.wasm",
+    "ochimono_engine.js",
+    "ochimono_engine_bg.js",
+    "ochimono_engine.d.ts"
+  ],
+  "main": "ochimono_engine.js",
+  "types": "ochimono_engine.d.ts",
+  "sideEffects": [
+    "./ochimono_engine.js",
+    "./snippets/*"
+  ]
+}

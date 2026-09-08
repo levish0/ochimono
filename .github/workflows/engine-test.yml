@@ -25,4 +25,4 @@ jobs:
           workspaces: "ochimono-engine -> target"
 
       - name: Run tests
-        run: cargo test --workspace --all-targets --locked
+        run: cargo test --all-targets --all-features --locked

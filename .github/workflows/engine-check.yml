@@ -27,10 +27,10 @@ jobs:
           workspaces: "ochimono-engine -> target"
 
       - name: Check
-        run: cargo check --workspace --all-targets --locked
+        run: cargo check --all-targets --all-features --locked
 
       - name: Clippy
-        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+        run: cargo clippy --all-targets --all-features --locked -- -D warnings
 
       - name: Format
-        run: cargo fmt --all -- --check
+        run: cargo fmt -- --check
